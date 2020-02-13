@@ -94,7 +94,6 @@ setuptools.setup(
     zip_safe=True,  # This package can safely be installed from a zip file
     platforms='any',
 
-    # Keep these Python versions in sync with yagot/__init__.py
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
