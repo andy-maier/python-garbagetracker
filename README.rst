@@ -13,7 +13,7 @@ Yagot - Yet Another Garbage Object Tracker written in pure Python
     :target: https://travis-ci.org/andy-maier/python-yagot/branches
     :alt: Travis test status (master)
 
-.. image:: https://ci.appveyor.com/api/projects/status/ebqjx5ei8kqc1mf1?svg=true
+.. image:: https://ci.appveyor.com/api/projects/status/ebqjx5ei8kqc1mf1/branch/master?svg=true
     :target: https://ci.appveyor.com/project/andy-maier/python-yagot/history
     :alt: Appveyor test status (master)
 
