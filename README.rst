@@ -1,5 +1,5 @@
-Yagot - Yet Another Garbage Object Tracker written in pure Python
-===============================
+Yagot - Yet Another Garbage Object Tracker for Python
+=====================================================
 
 .. image:: https://img.shields.io/pypi/v/yagot.svg
     :target: https://pypi.python.org/pypi/yagot/

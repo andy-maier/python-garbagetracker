@@ -75,7 +75,7 @@ setuptools.setup(
     install_requires=install_requires,
     dependency_links=dependency_links,
 
-    description="Yet Another Garbage Object Tracker written in pure Python",
+    description="Yet Another Garbage Object Tracker for Python",
     long_description=read_file('README.rst'),
     long_description_content_type='text/x-rst',
     license="Apache Software License 2.0",

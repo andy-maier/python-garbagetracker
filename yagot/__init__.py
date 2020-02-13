@@ -1,5 +1,5 @@
 """
-Yagot - Yet Another Garbage Object Tracker written in pure Python.
+Yagot - Yet Another Garbage Object Tracker for Python.
 
 If the objects that are created and deleted again cannot be completely
 released if their reference count drops to zero (e.g. in the presence of
