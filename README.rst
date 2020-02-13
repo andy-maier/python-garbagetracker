@@ -13,10 +13,7 @@ Yagot - Yet Another Garbage Object Tracker written in pure Python
     :target: https://travis-ci.org/andy-maier/python-yagot/branches
     :alt: Travis test status (master)
 
-.. # Update the URL in the Appveyor image link below to match the
-.. # "SVG branchimage URL" from the "master branch status badge" section on
-.. # the Settings -> Badges page of the project on Appveyor.
-.. image:: https://ci.appveyor.com/api/projects/status/UPDATE-THIS/branch/master?svg=true
+.. image:: https://ci.appveyor.com/api/projects/status/ebqjx5ei8kqc1mf1?svg=true
     :target: https://ci.appveyor.com/project/andy-maier/python-yagot/history
     :alt: Appveyor test status (master)
 
