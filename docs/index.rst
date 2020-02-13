@@ -1,6 +1,6 @@
 
-Yagot - Yet Another Garbage Object Tracker written in pure Python
-*****************************************************************
+Yagot - Yet Another Garbage Object Tracker for Python
+*****************************************************
 
 TBD
 

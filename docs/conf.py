@@ -96,7 +96,7 @@ project = u'Yagot'
 author = u"Andreas Maier"
 
 # The short description of the package.
-_short_description = u"Yet Another Garbage Object Tracker written in pure Python"
+_short_description = u"Yet Another Garbage Object Tracker for Python"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
