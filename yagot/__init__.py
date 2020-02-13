@@ -1,23 +1,21 @@
 """
-Yagot - Yet Another Garbage Object Tracker written in pure Python
+Yagot - Yet Another Garbage Object Tracker written in pure Python.
+
+If the objects that are created and deleted again cannot be completely
+released if their reference count drops to zero (e.g. in the presence of
+reference cycles), Python puts them into the garbage collector for
+subsequent, more elaborate treatment. That more elaborate treatment is able
+to release some of these objects, but not all of them. The objects that can
+eventually be released only create a delay in being released, while objects
+that cannot be released with the more elaborate treatment keep their
+memory permanently (i.e. as long as the Python process lives), representing
+a memory leak.
 """
+
+from __future__ import absolute_import, print_function
 
 # There are submodules, but users shouldn't need to know about them.
 # Importing just this module is enough.
-
-from __future__ import absolute_import
-import sys
+from ._decorators import *  # noqa: F403,F401
+from ._garbagetracker import *  # noqa: F403,F401
 from ._version import __version__  # noqa: F401
-
-_PY_M = sys.version_info[0]
-_PY_N = sys.version_info[1]
-
-# Keep these Python versions in sync with setup.py
-if _PY_M == 2 and _PY_N < 7:
-    raise RuntimeError(
-        "On Python 2, yagot requires "
-        "Python 2.7")
-elif _PY_M == 3 and _PY_N < 4:
-    raise RuntimeError(
-        "On Python 3, yagot requires "
-        "Python 3.4 or higher")
