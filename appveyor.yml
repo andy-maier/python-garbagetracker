@@ -1,4 +1,4 @@
-# Appveyor control file for garbagetracker project.
+# Appveyor control file for Yagot project.
 # For Appveyor CI, see https://appveyor.com
 
 environment:
@@ -9,6 +9,14 @@ environment:
       PYTHON_CMD: python
 
 #    - TOX_ENV: win64_py27_64
+#      UNIX_PATH: none
+#      PYTHON_CMD: python
+
+#    - TOX_ENV: win64_py34_32
+#      UNIX_PATH: none
+#      PYTHON_CMD: python
+
+#    - TOX_ENV: win64_py34_64
 #      UNIX_PATH: none
 #      PYTHON_CMD: python
 

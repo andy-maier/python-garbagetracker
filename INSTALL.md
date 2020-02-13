@@ -1,12 +1,12 @@
-Installation of garbagetracker project
+Installation of Yagot project
 =======================================================
 
-To install the latest released version of the garbagetracker
-project into your active Python environment:
+To install the latest released version of the
+Yagot project into your active Python environment:
 
-      $ pip install garbagetracker
+      $ pip install yagot
 
 This will also install any prerequisite Python packages.
 
 For more details and alternative ways to install, see
-[Installation](https://garbagetracker.readthedocs.io/en/stable/intro.html#installation).
+[Installation](https://yagot.readthedocs.io/en/stable/intro.html#installation).

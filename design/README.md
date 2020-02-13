@@ -1,4 +1,4 @@
-Design information for garbagetracker project
+Design information for Yagot project
 ==============================================================
 
 This directory contains loosely organized files in markdown, text or RST format

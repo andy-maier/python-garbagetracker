@@ -1,4 +1,4 @@
-# Makefile for the garbagetracker project.
+# Makefile for the Yagot project.
 #
 # Supported OS platforms for this Makefile:
 #     Linux (any distro)
@@ -36,7 +36,7 @@ ifndef PIP_CMD
 endif
 
 # Pip options that are always to be used
-pip_opts := --disable-pip-version-check --no-python-version-warning
+pip_opts := --disable-pip-version-check
 
 # Package level
 ifndef PACKAGE_LEVEL
@@ -129,10 +129,10 @@ else
 endif
 
 # Name of this project
-project_name := garbagetracker
+project_name := Yagot
 
 # Name of this Python package
-package_name := garbagetracker
+package_name := yagot
 
 # Determine if coverage details report generated
 # The variable can be passed in as either an environment variable or
@@ -144,7 +144,7 @@ else
   coverage_report :=
 endif
 
-# Directory for coverage html output. Must be in sync with the one in coveragerc.
+# Directory for coverage html output. Must be in sync with the one in .coveragerc.
 coverage_html_dir := coverage_html
 
 # Package version (full version, including any pre-release suffixes, e.g. "0.1.0.dev1").
@@ -308,10 +308,16 @@ ifeq (,$(package_version))
 	$(error Package version could not be determined)
 endif
 
+.PHONY: _check_installed
+_check_installed:
+	@echo "Makefile: Verifying installation of package $(package_name)"
+	$(PYTHON_CMD) -c "import $(package_name)"
+	@echo "Makefile: Done verifying installation of package $(package_name)"
+
 pip_upgrade_$(python_mn_version).done: Makefile
 	@echo "Makefile: Installing/upgrading Pip (with PACKAGE_LEVEL=$(PACKAGE_LEVEL))"
 	-$(call RM_FUNC,$@)
-	$(PYTHON_CMD) -m pip $(pip_opts) install $(pip_level_opts) pip
+	$(PYTHON_CMD) -m pip install $(pip_level_opts) pip
 	echo "done" >$@
 	@echo "Makefile: Done installing/upgrading Pip"
 
@@ -345,7 +351,7 @@ ifdef TEST_INSTALLED
 	$(PIP_CMD) $(pip_opts) show $(package_name)
 else
 ifeq ($(shell $(PIP_CMD) $(pip_opts) list --exclude-editable --format freeze | grep "$(package_name)=="),)
-  # if package is not installed as standalone
+# if package is not installed as standalone
 	@echo "Makefile: Installing package $(package_name) as standalone (with PACKAGE_LEVEL=$(PACKAGE_LEVEL))"
 	-$(PIP_CMD) $(pip_opts) uninstall -y $(package_name)
 	-$(call RMDIR_FUNC,$(package_name).egg-info)
@@ -366,7 +372,7 @@ ifdef TEST_INSTALLED
 	$(PIP_CMD) $(pip_opts) show $(package_name)
 else
 ifeq ($(shell $(PIP_CMD) $(pip_opts) list -e --format freeze | grep "$(package_name)=="),)
-	# if package is not installed as editable
+# if package is not installed as editable
 	@echo "Makefile: Installing package $(package_name) as editable (with PACKAGE_LEVEL=$(PACKAGE_LEVEL))"
 	-$(PIP_CMD) $(pip_opts) uninstall -y $(package_name)
 	-$(call RMDIR_FUNC,$(package_name).egg-info)
@@ -427,7 +433,7 @@ upload: _check_version $(dist_files)
 	@echo "Makefile: Target $@ done."
 
 .PHONY: html
-html: develop_$(python_mn_version).done $(doc_build_dir)/html/docs/index.html
+html: develop_reqs_$(python_mn_version).done $(doc_build_dir)/html/docs/index.html
 	@echo "Makefile: Target $@ done."
 
 $(doc_build_dir)/html/docs/index.html: Makefile $(doc_dependent_files)
@@ -437,7 +443,7 @@ $(doc_build_dir)/html/docs/index.html: Makefile $(doc_dependent_files)
 	@echo "Makefile: Done creating the documentation as HTML pages; top level file: $@"
 
 .PHONY: pdf
-pdf: develop_$(python_mn_version).done Makefile $(doc_dependent_files)
+pdf: develop_reqs_$(python_mn_version).done Makefile $(doc_dependent_files)
 	@echo "Makefile: Creating the documentation as PDF file"
 	-$(call RM_FUNC,$@)
 	$(doc_cmd) -b latex $(doc_opts) $(doc_build_dir)/pdf
@@ -447,7 +453,7 @@ pdf: develop_$(python_mn_version).done Makefile $(doc_dependent_files)
 	@echo "Makefile: Target $@ done."
 
 .PHONY: man
-man: develop_$(python_mn_version).done Makefile $(doc_dependent_files)
+man: develop_reqs_$(python_mn_version).done Makefile $(doc_dependent_files)
 	@echo "Makefile: Creating the documentation as man pages"
 	-$(call RM_FUNC,$@)
 	$(doc_cmd) -b man $(doc_opts) $(doc_build_dir)/man
@@ -455,7 +461,7 @@ man: develop_$(python_mn_version).done Makefile $(doc_dependent_files)
 	@echo "Makefile: Target $@ done."
 
 .PHONY: docchanges
-docchanges: develop_$(python_mn_version).done
+docchanges: develop_reqs_$(python_mn_version).done
 	@echo "Makefile: Creating the doc changes overview file"
 	$(doc_cmd) -b changes $(doc_opts) $(doc_build_dir)/changes
 	@echo
@@ -463,7 +469,7 @@ docchanges: develop_$(python_mn_version).done
 	@echo "Makefile: Target $@ done."
 
 .PHONY: doclinkcheck
-doclinkcheck: develop_$(python_mn_version).done
+doclinkcheck: develop_reqs_$(python_mn_version).done
 	@echo "Makefile: Creating the doc link errors file"
 	$(doc_cmd) -b linkcheck $(doc_opts) $(doc_build_dir)/linkcheck
 	@echo
@@ -471,7 +477,7 @@ doclinkcheck: develop_$(python_mn_version).done
 	@echo "Makefile: Target $@ done."
 
 .PHONY: doccoverage
-doccoverage: develop_$(python_mn_version).done
+doccoverage: develop_reqs_$(python_mn_version).done
 	@echo "Makefile: Creating the doc coverage results file"
 	$(doc_cmd) -b coverage $(doc_opts) $(doc_build_dir)/coverage
 	@echo "Makefile: Done creating the doc coverage results file: $(doc_build_dir)/coverage/python.txt"
@@ -514,7 +520,7 @@ $(bdist_file) $(sdist_file): _check_version setup.py MANIFEST.in $(dist_included
 # * 32 on usage error
 # Status 1 to 16 will be bit-ORed.
 # The make command checks for statuses: 1,2,32
-pylint_$(python_mn_version).done: develop_$(python_mn_version).done Makefile $(pylint_rc_file) $(py_src_files)
+pylint_$(python_mn_version).done: develop_reqs_$(python_mn_version).done Makefile $(pylint_rc_file) $(py_src_files)
 	@echo "Makefile: Running Pylint"
 	-$(call RM_FUNC,$@)
 	pylint --version
@@ -522,7 +528,7 @@ pylint_$(python_mn_version).done: develop_$(python_mn_version).done Makefile $(p
 	echo "done" >$@
 	@echo "Makefile: Done running Pylint"
 
-flake8_$(python_mn_version).done: develop_$(python_mn_version).done Makefile $(flake8_rc_file) $(py_src_files)
+flake8_$(python_mn_version).done: develop_reqs_$(python_mn_version).done Makefile $(flake8_rc_file) $(py_src_files)
 	@echo "Makefile: Running Flake8"
 	-$(call RM_FUNC,$@)
 	flake8 --version
@@ -530,7 +536,7 @@ flake8_$(python_mn_version).done: develop_$(python_mn_version).done Makefile $(f
 	echo "done" >$@
 	@echo "Makefile: Done running Flake8"
 
-safety_$(python_mn_version).done: develop_$(python_mn_version).done Makefile minimum-constraints.txt
+safety_$(python_mn_version).done: develop_reqs_$(python_mn_version).done Makefile minimum-constraints.txt
 	@echo "Makefile: Running pyup.io safety check"
 	-$(call RM_FUNC,$@)
 	-safety check -r minimum-constraints.txt --full-report
@@ -540,17 +546,17 @@ safety_$(python_mn_version).done: develop_$(python_mn_version).done Makefile min
 ifdef TEST_INSTALLED
   test_deps =
 else
-  test_deps = develop_$(python_mn_version).done
+  test_deps = develop
 endif
 
 .PHONY: test
 test: $(test_deps)
 	@echo "Makefile: Running unit tests"
-	py.test --color=yes --cov $(package_name) $(coverage_report) --cov-config coveragerc $(pytest_warning_opts) $(pytest_opts) tests/unittest tests/functiontest -s
+	py.test --color=yes --cov $(package_name) $(coverage_report) --cov-config .coveragerc $(pytest_warning_opts) $(pytest_opts) tests/unittest -s
 	@echo "Makefile: Done running unit tests"
 
 .PHONY: end2end
-end2end: develop_$(python_mn_version).done
+end2end: $(test_deps)
 	@echo "Makefile: Running end2end tests"
 	py.test --color=yes $(pytest_end2end_warning_opts) $(pytest_end2end_opts) tests/end2endtest -s
 	@echo "Makefile: Done running end2end tests"

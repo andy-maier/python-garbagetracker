@@ -5,7 +5,7 @@ Change log
 ==========
 
 
-garbagetracker 0.1.0
+yagot 0.1.0
 -------------------------------------
 
 Released: not yet
@@ -24,4 +24,4 @@ Released: not yet
 
 * See `list of open issues`_.
 
-.. _`list of open issues`: https://github.com/andy-maier/garbagetracker/issues
+.. _`list of open issues`: https://github.com/andy-maier/python-yagot/issues

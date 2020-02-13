@@ -5,7 +5,7 @@ Development
 ===========
 
 This section only needs to be read by developers of the
-garbagetracker project,
+Yagot project,
 including people who want to make a fix or want to test the project.
 
 
@@ -14,9 +14,9 @@ including people who want to make a fix or want to test the project.
 Repository
 ----------
 
-The repository for the garbagetracker project is on GitHub:
+The repository for the Yagot project is on GitHub:
 
-https://github.com/andy-maier/garbagetracker
+https://github.com/andy-maier/python-yagot
 
 
 .. _`Setting up the development environment`:
@@ -29,8 +29,8 @@ Setting up the development environment
 
    .. code-block:: bash
 
-        $ git clone git@github.com:andy-maier/garbagetracker.git
-        $ cd garbagetracker
+        $ git clone git@github.com:andy-maier/python-yagot.git
+        $ cd python-yagot
 
    If you do not have write access, create a fork on GitHub and clone the
    fork in the way shown above.
@@ -65,7 +65,7 @@ Building the documentation
 --------------------------
 
 The ReadTheDocs (RTD) site is used to publish the documentation for the
-project package at https://garbagetracker.readthedocs.io/
+project package at https://yagot.readthedocs.io/
 
 This page is automatically updated whenever the Git repo for this package
 changes the branch from which this documentation is built.
@@ -90,9 +90,10 @@ Testing
 
 
 All of the following `make` commands run the tests in the currently active
-Python environment. Depending on how the `garbagetracker`
-package is installed in that Python environment, either the directories in the
-main repository directory are used, or the installed package.
+Python environment.
+Depending on how the `yagot` package is installed in
+that Python environment, either the directories in the main repository
+directory are used, or the installed package.
 The test case files and any utility functions they use are always used from
 the `tests` directory in the main repository directory.
 
@@ -215,7 +216,7 @@ Further rules:
 Releasing a version to PyPI
 ---------------------------
 
-This section describes how to release a version of garbagetracker
+This section describes how to release a version of Yagot
 to PyPI.
 
 It covers all variants of versions:
@@ -262,7 +263,7 @@ Their upstream repos are assumed to have the remote name ``origin``.
 
     .. code-block:: bash
 
-        $ vi garbagetracker/_version.py
+        $ vi yagot/_version.py
 
     and set the version to be released:
 
@@ -404,13 +405,13 @@ Their upstream repos are assumed to have the remote name ``origin``.
     **Attention!!** This only works once. You cannot re-release the same
     version to PyPI.
 
-    Verify that it arrived on PyPI: https://pypi.python.org/pypi/garbagetracker/
+    Verify that it arrived on PyPI: https://pypi.python.org/pypi/yagot/
 
 Starting a new version
 ----------------------
 
 This section shows the steps for starting development of a new version of the
-garbagetracker project in its Git repo.
+Yagot project in its Git repo.
 
 It covers all variants of new versions:
 
@@ -454,7 +455,7 @@ It covers all variants of new versions:
 
     .. code-block:: bash
 
-        $ vi garbagetracker/_version.py
+        $ vi yagot/_version.py
 
     and set the version to the new development version:
 
@@ -474,10 +475,10 @@ It covers all variants of new versions:
 
     .. code-block:: text
 
-        garbagetracker 0.2.0.dev1
+        yagot 0.2.0.dev1
         ------------------------------------------
 
-        This version contains all fixes up to garbagetracker 0.1.x.
+        This version contains all fixes up to yagot 0.1.x.
 
         Released: not yet
 
@@ -495,7 +496,7 @@ It covers all variants of new versions:
 
         * See `list of open issues`_.
 
-        .. _`list of open issues`: https://github.com/andy-maier/garbagetracker/issues
+        .. _`list of open issues`: https://github.com/andy-maier/python-yagot/issues
 
 6.  Commit the changes and push to upstream:
 

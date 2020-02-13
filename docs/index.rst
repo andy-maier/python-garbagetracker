@@ -1,10 +1,10 @@
 
-Tracker for memory leaks written in pure Python
-****************************************************************************************************
+Yagot - Yet Another Garbage Object Tracker written in pure Python
+*******************************
 
 TBD
 
-The general project web site is: https://github.com/andy-maier/garbagetracker
+The general project web site is: https://github.com/andy-maier/python-yagot
 
 .. toctree::
    :maxdepth: 2

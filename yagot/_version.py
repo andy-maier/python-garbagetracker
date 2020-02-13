@@ -1,5 +1,5 @@
 """
-Version of the garbagetracker project.
+Version of the yagot package.
 """
 
 #: The full version of this package including any development levels, as a

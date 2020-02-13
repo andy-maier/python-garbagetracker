@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Python setup script for the garbagetracker project.
+Python setup script for the Yagot project.
 """
 
 import os
@@ -55,7 +55,7 @@ install_requires = [req for req in requirements
                     if req and not re.match(r'[^:]+://', req)]
 dependency_links = [req for req in requirements
                     if req and re.match(r'[^:]+://', req)]
-package_version = get_version(os.path.join('garbagetracker', '_version.py'))
+package_version = get_version(os.path.join('yagot', '_version.py'))
 
 # Docs on setup():
 # * https://docs.python.org/2.7/distutils/apiref.html?
@@ -63,10 +63,10 @@ package_version = get_version(os.path.join('garbagetracker', '_version.py'))
 # * https://setuptools.readthedocs.io/en/latest/setuptools.html#
 #   new-and-changed-setup-keywords
 setuptools.setup(
-    name='garbagetracker',
+    name='yagot',
     version=package_version,
     packages=[
-        'garbagetracker',
+        'yagot',
     ],
     include_package_data=True,  # as specified in MANIFEST.in
     scripts=[
@@ -75,7 +75,7 @@ setuptools.setup(
     install_requires=install_requires,
     dependency_links=dependency_links,
 
-    description="Tracker for memory leaks written in pure Python",
+    description="Yet Another Garbage Object Tracker written in pure Python",
     long_description=read_file('README.rst'),
     long_description_content_type='text/x-rst',
     license="Apache Software License 2.0",
@@ -83,19 +83,19 @@ setuptools.setup(
     author_email='andreas.r.maier@gmx.de',
     maintainer="Andreas Maier",
     maintainer_email='andreas.r.maier@gmx.de',
-    url='https://github.com/andy-maier/garbagetracker',
+    url='https://github.com/andy-maier/python-yagot',
     project_urls={
-        'Bug Tracker': 'https://github.com/andy-maier/garbagetracker/issues',
-        'Documentation': 'https://garbagetracker.readthedocs.io/en/latest/',
-        'Source Code': 'https://github.com/andy-maier/garbagetracker',
+        'Bug Tracker': 'https://github.com/andy-maier/python-yagot/issues',
+        'Documentation': 'https://yagot.readthedocs.io/en/latest/',
+        'Source Code': 'https://github.com/andy-maier/python-yagot',
     },
 
     options={'bdist_wheel': {'universal': True}},
     zip_safe=True,  # This package can safely be installed from a zip file
     platforms='any',
 
-    # Keep these Python versions in sync with garbagetracker/__init__.py
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
+    # Keep these Python versions in sync with yagot/__init__.py
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Environment :: Console',
@@ -105,6 +105,7 @@ setuptools.setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',

@@ -1,4 +1,4 @@
-# Pip constraints file for garbagetracker project.
+# Pip constraints file for Yagot project.
 #
 # This file specifies constraints that define the minimum versions of any
 # direct and indirect dependent packages for installation and development of
@@ -62,6 +62,9 @@ wheel==0.33.6; python_version >= '3.8'
 # Indirect dependencies for installation
 
 # funcsigs; is covered in direct deps for develop, from mock
+
+# PyYAML is pulled in by python-coveralls
+PyYAML==5.1
 
 
 # Direct dependencies for development (must be consistent with dev-requirements.txt)

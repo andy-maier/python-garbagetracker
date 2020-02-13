@@ -1,4 +1,4 @@
-# Flake8 config file for garbagetracker project.
+# Flake8 config file for Yagot project.
 
 [flake8]
 max_line_length = 80

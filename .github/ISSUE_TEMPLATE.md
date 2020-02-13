@@ -6,6 +6,6 @@
 
 ### Execution environment
 
-* garbagetracker version:
+* yagot version:
 * Python version:
 * Operating System (type+version):
