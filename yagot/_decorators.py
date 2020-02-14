@@ -37,17 +37,16 @@ def garbage_tracked(func):
         and reports any garbage objects by raising an AssertionError exception.
         """
 
-        tracker = GarbageTracker.get_tracker('decorated')
+        tracker = GarbageTracker.get_tracker('_yagot.garbage_tracked')
         tracker.enable()
         tracker.start()
 
         ret = func(*args, **kwargs)
 
         tracker.stop()
-        if tracker.garbage:
-            location = "{file}::{func}". \
-                format(file=func.__module__, func=func.__name__)
-            tracker.assert_no_garbage(location)
+        location = "{file}::{func}". \
+            format(file=func.__module__, func=func.__name__)
+        tracker.assert_no_garbage(location)
 
         return ret
 
