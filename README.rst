@@ -31,20 +31,23 @@ It provides a Python decorator named ``garbage_tracked`` which asserts that the
 decorated function or method does not create any garbage objects.
 
 Garbage objects are Python objects that cannot be immediately released when
-the object becomes unreachable and are therefore put into the generational
-Python garbage collector where more elaborated algorithms are used at a later
+the object becomes unreachable and are therefore put into the *generational
+Python garbage collector* where more elaborated algorithms are used at a later
 point in time to release the objects.
 
-This may create problems for your Python application for two reasons:
+Garbage objects may create problems for your Python application for two reasons:
 
-1. The time delay involved in this approach keeps memory allocated for longer
-   than necessary, causing increased memory consumption.
+1. The time delay caused by the asynchronous processing of the Python garbage
+   collector causes the memory of the garbage objects to be allocated for longer
+   than necessary, causing increased memory consumption. The severity of this
+   problem increases with the amount and frequency of garbage objects created.
 
-2. There are cases where even the more elaborated algorithms cannot release a
-   garbage object. If that happens, it is a memory leak that remains until
-   the Python process ends.
+2. There are cases where even the more elaborated algorithms of the Python
+   garbage collector cannot release a garbage object. In such a case, the
+   memory for the garbage garbage objects remains allocated within the Python
+   process, causing a memory leak that remains until the Python process ends.
 
-The ``garbage_tracked``  decorator can be used on any function or method, but
+The ``garbage_tracked`` decorator can be used on any function or method, but
 it makes most sense to use it on test functions. It is a signature-preserving
 decorator that supports any number of positional and keyword arguments in the
 decorated function or method, and any kind of return value(s).
@@ -71,29 +74,27 @@ This will also install any prerequisite Python packages.
 
 For more details and alternative ways to install, see `Installation`_.
 
-.. _Installation: https://yagot.readthedocs.io/en/stable/intro.html#installation
+.. _Installation: https://yagot.readthedocs.io/en/latest/intro.html#installation
 
 
-Quick start
------------
+Usage
+-----
 
-Here is an example of using it with pytest:
+Here is an example of how to use Yagot with a pytest testcase:
 
-In ``examples/test_selfref_dict.py``:
+In an example test file ``examples/test_selfref_dict.py``, you would have:
 
 .. code-block:: python
 
-    from yagot import garbage_tracked
+    import yagot
 
-    @garbage_tracked
+    @yagot.garbage_tracked
     def test_selfref_dict():
-
-        # Dictionary with self-referencing item:
         d1 = dict()
         d1['self'] = d1
 
-Running pytest on this example reveals the garbage object with a test failure
-raised by yagot:
+Running pytest on this example test file reveals the presence of garbage objects
+because it raises a test failure:
 
 .. code-block:: text
 
@@ -134,9 +135,11 @@ raised by yagot:
     yagot/_decorators.py:43: AssertionError
     =================================== 1 failed in 0.07 seconds ===================================
 
-The AssertionError shows that there was one garbage object detected, and
-details about that object. In this case, the garbage object is a ``dict``
-object, and we can see that its 'self' item references back to the dict object.
+The AssertionError raised by Yagot shows that there was one garbage object
+detected in the decorated test function, and some details about that object.
+In this case, we can see that the garbage object is a ``dict`` object, and that
+its 'self' item references back to the same ``dict`` object, so there was
+a reference cycle that caused the object to become a garbage object.
 
 The failure location and source code shown by pytest is the wrapper function of
 the ``garbage_tracked`` decorator, since this is where it is detected.
@@ -145,23 +148,31 @@ reported by pytest as a failing test function, and is also mentioned in the
 assertion message using a "module::function" notation.
 
 Knowing the test function ``test_selfref_dict()`` that caused the object to
-become a garbage object is a good start to identify the problem code, and in
-our example case it is easy to do. In more complex situations, it may be helpful
-to split the complex test function into multiple simpler test functions.
+become a garbage object is a good start for identifying the problem code, and in
+our example case it is easy to do because the test function is simple enough.
+If the test function is too complex to identify the culprit, it can be split
+into multiple simpler test functions, or new test functions can be added to
+check out specific types of objects that were used.
 
-The ``garbage_tracked`` decorator can be combined with any other decorators.
-Note that it always tracks the decorated function, so unless you want to track
-what garbage other decorators create, you want to have it directly on the test
-function, as the innermost decorator:
+As an exercise, check out the standard ``dict`` class and the
+``collections.OrderedDict`` class by creating empty dictionaries. You will find
+that on Python 2, ``collections.OrderedDict`` causes garbage objects (in the
+CPython implementation).
+
+The ``garbage_tracked`` decorator can be combined with any other decorators in
+any order. Note that it always tracks the next inner function, so unless you
+want to track what garbage other decorators create, you want to have it
+directly on the test function, as the innermost decorator, like in the following
+example:
 
 .. code-block:: python
 
     import pytest
-    from yagot import garbage_tracked
+    import yagot
 
     @pytest.mark.parametrize('parm2', [ ... ])
     @pytest.mark.parametrize('parm1', [ ... ])
-    @garbage_tracked
+    @yagot.garbage_tracked
     def test_something(parm1, parm2):
         pass  # some test code
 
