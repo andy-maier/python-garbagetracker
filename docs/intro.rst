@@ -8,12 +8,147 @@ Introduction
    :depth: 2
 
 
-.. _`Functionality`:
+.. _`Quick start`:
 
-Functionality
--------------
+Quick start
+-----------
 
-TBD
+Here is an example of using it with pytest:
+
+In ``examples/test_selfref_dict.py``:
+
+.. code-block:: python
+
+    from yagot import garbage_tracked
+
+    @garbage_tracked
+    def test_selfref_dict():
+
+        # Dictionary with self-referencing item:
+        d1 = dict()
+        d1['self'] = d1
+
+Running pytest on this example reveals the garbage object with a test failure
+raised by yagot:
+
+.. code-block:: text
+
+    $ pytest examples -k test_selfref_dict.py
+
+    ===================================== test session starts ======================================
+    platform darwin -- Python 2.7.16, pytest-4.6.9, py-1.8.1, pluggy-0.13.1
+    rootdir: /Users/maiera/PycharmProjects/python-yagot
+    plugins: cov-2.8.1
+    collected 1 item
+
+    examples/test_selfref_dict.py F                                                          [100%]
+
+    =========================================== FAILURES ===========================================
+    ______________________________________ test_selfref_dict _______________________________________
+
+    args = (), kwargs = {}, tracker = <yagot._garbagetracker.GarbageTracker object at 0x10e451f90>
+    ret = None, location = 'test_selfref_dict::test_selfref_dict'
+
+        def garbage_tracked_wrapper(*args, **kwargs):
+            """
+            Wrapper function for the @garbage_tracked decorator.
+            """
+            tracker = GarbageTracker.get_tracker('yagot.garbage_tracked')
+            tracker.enable()
+            tracker.start()
+            ret = func(*args, **kwargs)  # The decorated function
+            tracker.stop()
+            location = "{module}::{function}".format(
+                module=func.__module__, function=func.__name__)
+    >       assert not tracker.garbage, tracker.format_garbage(location)
+    E       AssertionError:
+    E       There was 1 garbage object(s) caused by function test_selfref_dict::test_selfref_dict:
+    E
+    E       1: <type 'dict'> object at 0x10e514d70:
+    E       { 'self': <Recursive reference to dict object at 0x10e514d70>}
+
+    yagot/_decorators.py:43: AssertionError
+    =================================== 1 failed in 0.07 seconds ===================================
+
+The AssertionError shows that there was one garbage object detected, and
+details about that object. In this case, the garbage object is a ``dict``
+object, and we can see that its 'self' item references back to the dict object.
+
+The failure location and source code shown by pytest is the wrapper function of
+the ``garbage_tracked`` decorator, since this is where it is detected.
+The decorated function that caused the garbage objects to be created is
+reported by pytest as a failing test function, and is also mentioned in the
+assertion message using a "module::function" notation.
+
+Knowing the test function ``test_selfref_dict()`` that caused the object to
+become a garbage object is a good start to identify the problem code, and in
+our example case it is easy to do. In more complex situations, it may be helpful
+to split the complex test function into multiple simpler test functions.
+
+The ``garbage_tracked`` decorator can be combined with any other decorators.
+Note that it always tracks the decorated function, so unless you want to track
+what garbage other decorators create, you want to have it directly on the test
+function, as the innermost decorator:
+
+.. code-block:: python
+
+    import pytest
+    from yagot import garbage_tracked
+
+    @pytest.mark.parametrize('parm2', [ ... ])
+    @pytest.mark.parametrize('parm1', [ ... ])
+    @garbage_tracked
+    def test_something(parm1, parm2):
+        pass  # some test code
+
+
+.. _`Reference cycles`:
+
+Reference cycles
+----------------
+
+In probably all cases, such garbage objects are caused by cyclic references
+between objects. Here are some simple cases of objects with reference cycles:
+
+.. code-block:: python
+
+    # Dictionary with self-referencing item:
+    d1 = dict()
+    d1['self'] = d1
+
+    # Object of a class with self-referencing attribute:
+    class SelfRef(object):
+         def __init__(self):
+             self.ref = self
+    obj = SelfRef()
+
+The garbage objects created as a result can be inspected by the standard Python
+module ``gc`` that provides access to the garbage collector:
+
+.. code-block:: python
+
+    $ python
+    >>> import gc
+    >>> gc.collect()
+    0                  # No garbage objects initially (in this simple case)
+    >>> d1 = dict(); d1['self'] = d1
+    >>> d1
+    {'self': {...}}
+    >>> gc.collect()
+    0                  # Still no garbage objects
+    >>> del d1         # The dict object becomes unreachable ...
+    >>> gc.collect()
+    1                  # ... and ends up as one garbage object
+
+The interesting part happens during the ``del d1`` statement, but let's first
+level set on names vs. objects in Python: A variable (``d1``) is not an object
+but a name that is bound to an object (of type ``dict``). The ``del d1``
+statement removes the name ``d1`` from its namespace. That causes the reference
+count of the ``dict`` object to drop to 0 (in this case, where there is no other
+variable name bound to it and no other object referencing it). The object is
+then said to be "unreachable". That causes Python to try to immediately release
+the ``dict`` object. This does not work because of the self-reference, so it is
+put into the garbage collector for later treatment.
 
 
 .. _`Installation`:
@@ -21,15 +156,12 @@ TBD
 Installation
 ------------
 
-TBD
-
-
 .. _`Supported environments`:
 
 Supported environments
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Pywbem is supported in these environments:
+Yagot is supported in these environments:
 
 * Operating Systems: Linux, Windows (native, and with UNIX-like environments),
   OS-X
@@ -52,8 +184,8 @@ Installing
     - wheel
     - pip
 
-* Install the yagot package and its prerequisite
-  Python packages into the active Python environment:
+* Install the yagot package and its prerequisite Python packages into the
+  active Python environment:
 
   .. code-block:: bash
 
@@ -194,16 +326,3 @@ the Yagot project, by version type:
 * New major release (M.N.P -> M+1.0.0): Deprecated functionality may get
   removed; functionality may be extended or changed; backwards compatibility
   may be broken.
-
-
-.. _'Python namespaces`:
-
-Python namespaces
------------------
-
-TBD - describe the python namespaces to clarify what is for external use
-and what is internal.
-
-This documentation describes only the external APIs of the
-Yagot project, and omits any internal symbols and
-any sub-modules.
