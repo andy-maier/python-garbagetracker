@@ -4,7 +4,6 @@ GarbageTracker class.
 
 from __future__ import absolute_import, print_function
 
-import sys
 import types
 import re
 import gc
@@ -153,62 +152,34 @@ class GarbageTracker(object):
         if self.enabled:
             self._ignored = True
 
-    def print_if_garbage(self, location=None, max=10, stream=sys.stdout):
+    def format_garbage(self, location=None, max=10):
         # pylint: disable=redefined-builtin
         """
-        If there were garbage objects found during the last tracking period,
-        print the garbage objects (up to a maximum number).
+        Return a formatted multi-line string for all garbage objects detected
+        during teh tracking period, up to a maximum number.
 
         Parameters:
 
-            location (string): Location of the tracked code, e.g. as
-              "module::function".
-
-            max (int): Maximum number of garbage objects to be printed.
-
-            stream: Stream to be printed on.
-        """
-        if self.enabled and self.garbage:
-            print("\n{num} garbage objects left by {loc}:".
-                  format(num=len(self.garbage), loc=location))
-            for i, obj in enumerate(self.garbage):
-                if i >= max:
-                    print("...", file=stream)
-                    break
-                obj_str = self._format(obj)
-                print(obj_str, file=stream)
-                stream.flush()
-
-    def assert_no_garbage(self, location=None, max=10):
-        # pylint: disable=redefined-builtin
-        """
-        Assert that there were no garbage objects found during the last
-        tracking period. Otherwise, raise AssertionError with a message that
-        describes the garbage objects (up to a maximum number).
-
-        Parameters:
-
-            location (string): Location of the tracked code, e.g. as
-              "module::function".
+            location (string): Location of the function that created the garbage
+              objects, e.g. in the notation "module::function".
 
             max (int): Maximum number of garbage objects to be included in the
-              exception message.
+              returned string.
         """
-        if self.enabled and self.garbage:
-            ass_str = "{num} garbage objects left by {loc}:\n". \
-                format(num=len(self.garbage), loc=location)
-            for i, obj in enumerate(self.garbage):
-                # self._generate_objgraph(obj)
-                if i >= max:
-                    ass_str += "...\n"
-                    break
-                ass_str += "{}: {}\n".format(i + 1, self._format(obj))
-            raise AssertionError(ass_str)
+        ret_str = "\nThere was {num} garbage object(s) caused by function " \
+            "{loc}:\n".format(num=len(self.garbage), loc=location)
+        for i, obj in enumerate(self.garbage):
+            # self._generate_objgraph(obj)
+            if i >= max:
+                ret_str += "\n...\n"
+                break
+            ret_str += "\n{}: {}\n".format(i + 1, self.format_obj(obj))
+        return ret_str
 
     @staticmethod
-    def _format(obj):
+    def format_obj(obj):
         """
-        Return a formatted string for the garbage object.
+        Return a formatted string for a single garbage object.
 
         Parameters:
 

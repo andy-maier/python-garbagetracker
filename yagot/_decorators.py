@@ -29,25 +29,18 @@ def garbage_tracked(func):
     any signature.
     """
 
-    def wrapper_func(*args, **kwargs):
+    def garbage_tracked_wrapper(*args, **kwargs):
         """
-        Wrapper function that is invoked instead of the decorated function.
-
-        It puts garbage tracking around the invocation of the decorated function
-        and reports any garbage objects by raising an AssertionError exception.
+        Wrapper function for the @garbage_tracked decorator.
         """
-
-        tracker = GarbageTracker.get_tracker('_yagot.garbage_tracked')
+        tracker = GarbageTracker.get_tracker('yagot.garbage_tracked')
         tracker.enable()
         tracker.start()
-
-        ret = func(*args, **kwargs)
-
+        ret = func(*args, **kwargs)  # The decorated function
         tracker.stop()
-        location = "{file}::{func}". \
-            format(file=func.__module__, func=func.__name__)
-        tracker.assert_no_garbage(location)
-
+        location = "{module}::{function}".format(
+            module=func.__module__, function=func.__name__)
+        assert not tracker.garbage, tracker.format_garbage(location)
         return ret
 
-    return functools.update_wrapper(wrapper_func, func)
+    return functools.update_wrapper(garbage_tracked_wrapper, func)
