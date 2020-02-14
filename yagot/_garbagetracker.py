@@ -157,13 +157,14 @@ class GarbageTracker(object):
         # pylint: disable=redefined-builtin
         """
         If there were garbage objects found during the last tracking period,
-        print the garbage objects.
+        print the garbage objects (up to a maximum number).
 
         Parameters:
 
-            location (string): Location of the testcase (file::func).
+            location (string): Location of the tracked code, e.g. as
+              "module::function".
 
-            max (int): Maximum number of objects to be printed.
+            max (int): Maximum number of garbage objects to be printed.
 
             stream: Stream to be printed on.
         """
@@ -182,15 +183,16 @@ class GarbageTracker(object):
         # pylint: disable=redefined-builtin
         """
         Assert that there were no garbage objects found during the last
-        tracking period. Raise AssertionError with a message that describes
-        the location of the testcase and the garbage objects (up to a maximum
-        number), otherwise.
+        tracking period. Otherwise, raise AssertionError with a message that
+        describes the garbage objects (up to a maximum number).
 
         Parameters:
 
-            location (string): Location of the testcase (file::func).
+            location (string): Location of the tracked code, e.g. as
+              "module::function".
 
-            max (int): Maximum number of garbage bjects to be included.
+            max (int): Maximum number of garbage objects to be included in the
+              exception message.
         """
         if self.enabled and self.garbage:
             ass_str = "{num} garbage objects left by {loc}:\n". \
