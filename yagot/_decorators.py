@@ -6,34 +6,36 @@ from __future__ import absolute_import, print_function
 import functools
 from ._garbagetracker import GarbageTracker
 
-__all__ = ['garbage_tracked']
+__all__ = ['assert_no_garbage']
 
 
-def garbage_tracked(func):
+def assert_no_garbage(func):
     """
-    Decorator that performs garbage tracking for the decorated function
-    or method.
+    Decorator that performs garbage tracking for the decorated function or
+    method and that asserts that the decorated function or method does not
+    cause any garbage objects (i.e. objects Python added to the garbage
+    collector because they could not immediately be released).
 
-    This decorator should be used on test functions that specifically test for
-    garbage objects.
-
-    The decorated test function or method needs to make sure that any objects it
-    creates are either explicitly deleted again before the function returns,
-    or by means of their referencing variable going out of scope.
+    The decorator is signature-preserving, and the decorated function or method
+    can have any signature.
 
     Any objects Python added to the garbage collector during execution of
     the decorated function or method will be reported by this decorator by
     raising an AssertionError exception.
 
-    The decorator is signature-preserving, and the function or method can have
-    any signature.
+    The decorated function or method needs to make sure that any objects it
+    creates are deleted again, either implicitly (e.g. by a local variable
+    going out of scope upon return) or explicitly. Ideally, no garbage is
+    created that way, but whether that is actually the case is exactly what the
+    decorator tests for. Also, it is possible that your code is clean but
+    other modules your code uses are not clean, and that will surface this way.
     """
 
-    def garbage_tracked_wrapper(*args, **kwargs):
+    def assert_no_garbage_wrapper(*args, **kwargs):
         """
-        Wrapper function for the @garbage_tracked decorator.
+        Wrapper function for the @assert_no_garbage decorator.
         """
-        tracker = GarbageTracker.get_tracker('yagot.garbage_tracked')
+        tracker = GarbageTracker.get_tracker('yagot.assert_no_garbage')
         tracker.enable()
         tracker.start()
         ret = func(*args, **kwargs)  # The decorated function
@@ -43,4 +45,4 @@ def garbage_tracked(func):
         assert not tracker.garbage, tracker.format_garbage(location)
         return ret
 
-    return functools.update_wrapper(garbage_tracked_wrapper, func)
+    return functools.update_wrapper(assert_no_garbage_wrapper, func)

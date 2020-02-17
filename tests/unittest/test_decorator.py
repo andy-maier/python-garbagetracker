@@ -1,11 +1,11 @@
 """
-Test the garbage_tracked decorator.
+Test the assert_no_garbage decorator.
 """
 
 from __future__ import absolute_import, print_function
 
 import pytest
-from yagot import garbage_tracked
+from yagot import assert_no_garbage
 
 
 class SelfRef(object):
@@ -22,7 +22,7 @@ class SelfRef(object):
         self.ref = self
 
 
-@garbage_tracked
+@assert_no_garbage
 def test_leaks_empty():
     """
     Empty test function.
@@ -31,7 +31,7 @@ def test_leaks_empty():
 
 
 @pytest.mark.xfail(raises=AssertionError, strict=True)
-@garbage_tracked
+@assert_no_garbage
 def test_leaks_selfref():
     """
     Test function with SelfRef object that intentionally fails.

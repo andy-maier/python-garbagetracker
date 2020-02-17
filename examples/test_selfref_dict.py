@@ -1,6 +1,6 @@
 import yagot
 
-@yagot.garbage_tracked
+@yagot.assert_no_garbage
 def test_selfref_dict():
 
     # Dictionary with self-referencing item:
