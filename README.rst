@@ -27,7 +27,7 @@ Overview
 
 Yagot is Yet Another Garbage Object Tracker for Python.
 
-It provides a Python decorator named ``garbage_tracked`` which asserts that the
+It provides a Python decorator named ``assert_no_garbage`` which asserts that the
 decorated function or method does not create any garbage objects.
 
 Garbage objects are Python objects that cannot be immediately released when
@@ -47,7 +47,7 @@ Garbage objects may create problems for your Python application for two reasons:
    memory for the garbage garbage objects remains allocated within the Python
    process, causing a memory leak that remains until the Python process ends.
 
-The ``garbage_tracked`` decorator can be used on any function or method, but
+The ``assert_no_garbage`` decorator can be used on any function or method, but
 it makes most sense to use it on test functions. It is a signature-preserving
 decorator that supports any number of positional and keyword arguments in the
 decorated function or method, and any kind of return value(s).
@@ -88,7 +88,7 @@ In an example test file ``examples/test_selfref_dict.py``, you would have:
 
     import yagot
 
-    @yagot.garbage_tracked
+    @yagot.assert_no_garbage
     def test_selfref_dict():
         d1 = dict()
         d1['self'] = d1
@@ -114,11 +114,11 @@ because it raises a test failure:
     args = (), kwargs = {}, tracker = <yagot._garbagetracker.GarbageTracker object at 0x10e451f90>
     ret = None, location = 'test_selfref_dict::test_selfref_dict'
 
-        def garbage_tracked_wrapper(*args, **kwargs):
+        def assert_no_garbage_wrapper(*args, **kwargs):
             """
-            Wrapper function for the @garbage_tracked decorator.
+            Wrapper function for the @assert_no_garbage decorator.
             """
-            tracker = GarbageTracker.get_tracker('yagot.garbage_tracked')
+            tracker = GarbageTracker.get_tracker('yagot.assert_no_garbage')
             tracker.enable()
             tracker.start()
             ret = func(*args, **kwargs)  # The decorated function
@@ -142,7 +142,7 @@ its 'self' item references back to the same ``dict`` object, so there was
 a reference cycle that caused the object to become a garbage object.
 
 The failure location and source code shown by pytest is the wrapper function of
-the ``garbage_tracked`` decorator, since this is where it is detected.
+the ``assert_no_garbage`` decorator, since this is where it is detected.
 The decorated function that caused the garbage objects to be created is
 reported by pytest as a failing test function, and is also mentioned in the
 assertion message using a "module::function" notation.
@@ -159,7 +159,7 @@ As an exercise, check out the standard ``dict`` class and the
 that on Python 2, ``collections.OrderedDict`` causes garbage objects (in the
 CPython implementation).
 
-The ``garbage_tracked`` decorator can be combined with any other decorators in
+The ``assert_no_garbage`` decorator can be combined with any other decorators in
 any order. Note that it always tracks the next inner function, so unless you
 want to track what garbage other decorators create, you want to have it
 directly on the test function, as the innermost decorator, like in the following
@@ -172,7 +172,7 @@ example:
 
     @pytest.mark.parametrize('parm2', [ ... ])
     @pytest.mark.parametrize('parm1', [ ... ])
-    @yagot.garbage_tracked
+    @yagot.assert_no_garbage
     def test_something(parm1, parm2):
         pass  # some test code
 
