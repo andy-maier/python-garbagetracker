@@ -26,8 +26,10 @@ class GarbageTracker(object):
     The GarbageTracker class provides named garbage trackers that can track
     garbage objects that emerged during a tracking period.
 
-    Gargabe objects are objects that are already out of use but still have some
-    sort of cyclic references that prevent them from being freed.
+    Garbage objects are Python objects that cannot be immediately released when
+    the object becomes unreachable and are therefore put into the generational
+    Python garbage collector where more elaborated algorithms are used at a
+    later point in time to release the objects.
     """
 
     trackers = dict()
@@ -59,6 +61,35 @@ class GarbageTracker(object):
             GarbageTracker.trackers[name] = GarbageTracker(name)
         return GarbageTracker.trackers[name]
 
+    @property
+    def name(self):
+        """
+        Name of this garbage tracker.
+        """
+        return self._name
+
+    @property
+    def garbage(self):
+        """
+        List of new garbage objects that emerged during the tracking period,
+        i.e. between start() and stop().
+        """
+        return self._garbage
+
+    @property
+    def enabled(self):
+        """
+        Boolean indicating the enablement status of the garbage tracker.
+        """
+        return self._enabled
+
+    @property
+    def ignored(self):
+        """
+        Return whether the current tracking period should be ignored.
+        """
+        return self._ignored
+
     def enable(self, enabled=True):
         """
         Enable or disable the garbage tracker.
@@ -70,34 +101,12 @@ class GarbageTracker(object):
         """
         self._enabled = enabled
 
-    @property
-    def name(self):
+    def ignore(self):
         """
-        Name of this garbage tracker.
+        Ignore the current tracking period for this garbage tracker.
         """
-        return self._name
-
-    @property
-    def enabled(self):
-        """
-        Boolean indicating the enablement status of the garbage tracker.
-        """
-        return self._enabled
-
-    @property
-    def garbage(self):
-        """
-        List of new garbage objects that emerged during the tracking period,
-        i.e. between start() and stop().
-        """
-        return self._garbage
-
-    @property
-    def ignored(self):
-        """
-        Return whether the current tracking period should be ignored.
-        """
-        return self._ignored
+        if self.enabled:
+            self._ignored = True
 
     def start(self):
         """
@@ -144,13 +153,6 @@ class GarbageTracker(object):
                     self._garbage = []
                 else:
                     self._garbage = tmp_garbage
-
-    def ignore(self):
-        """
-        Ignore the current tracking period for this garbage tracker.
-        """
-        if self.enabled:
-            self._ignored = True
 
     def format_garbage(self, location=None, max=10):
         # pylint: disable=redefined-builtin
