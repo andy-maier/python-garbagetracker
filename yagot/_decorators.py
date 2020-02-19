@@ -33,7 +33,7 @@ def assert_no_garbage(func):
 
     def assert_no_garbage_wrapper(*args, **kwargs):
         """
-        Wrapper function for the @assert_no_garbage decorator.
+        Wrapper function for the assert_no_garbage decorator.
         """
         tracker = GarbageTracker.get_tracker('yagot.assert_no_garbage')
         tracker.enable()
