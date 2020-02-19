@@ -186,6 +186,7 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         func_pass.__doc__,
         dict(
             func=func_pass,
+            ignore_garbage_types=None,
             exp_garbage_types=[],
             exp_uncollectable_count=0,
         ),
@@ -194,6 +195,7 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         func_dict_string.__doc__,
         dict(
             func=func_dict_string,
+            ignore_garbage_types=None,
             exp_garbage_types=[],
             exp_uncollectable_count=0,
         ),
@@ -202,6 +204,7 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         func_ordereddict_empty.__doc__,
         dict(
             func=func_ordereddict_empty,
+            ignore_garbage_types=None,
             exp_garbage_types=[list] if six.PY2 else [],
             exp_uncollectable_count=0,
         ),
@@ -210,7 +213,26 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         func_dict_selfref.__doc__,
         dict(
             func=func_dict_selfref,
+            ignore_garbage_types=None,
             exp_garbage_types=[dict],
+            exp_uncollectable_count=0,
+        ),
+    ),
+    (
+        func_dict_selfref.__doc__,
+        dict(
+            func=func_dict_selfref,
+            ignore_garbage_types=[list],
+            exp_garbage_types=[dict],
+            exp_uncollectable_count=0,
+        ),
+    ),
+    (
+        func_dict_selfref.__doc__,
+        dict(
+            func=func_dict_selfref,
+            ignore_garbage_types=[dict],
+            exp_garbage_types=[],
             exp_uncollectable_count=0,
         ),
     ),
@@ -218,7 +240,17 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         func_class_selfref.__doc__,
         dict(
             func=func_class_selfref,
+            ignore_garbage_types=None,
             exp_garbage_types=[SelfRef, dict],
+            exp_uncollectable_count=0,
+        ),
+    ),
+    (
+        func_class_selfref.__doc__,
+        dict(
+            func=func_class_selfref,
+            ignore_garbage_types=[SelfRef],
+            exp_garbage_types=[],
             exp_uncollectable_count=0,
         ),
     ),
@@ -226,6 +258,7 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         func_minidom_document.__doc__,
         dict(
             func=func_minidom_document,
+            ignore_garbage_types=None,
             exp_garbage_types=13 if six.PY2 else 10,  # not listed specifically
             exp_uncollectable_count=0,
         ),
@@ -247,6 +280,7 @@ def test_GarbageTracker_track(desc, details, enable, ignore):
     GarbageTracker.start()/stop()/garbage.
     """
     func = details['func']
+    ignore_garbage_types = details['ignore_garbage_types']
     exp_garbage_types = details['exp_garbage_types']
     exp_uncollectable_count = details['exp_uncollectable_count']
 
@@ -261,6 +295,10 @@ def test_GarbageTracker_track(desc, details, enable, ignore):
 
     if ignore:
         obj.ignore()
+
+    if ignore_garbage_types is not None:
+        obj.ignore_garbage_types(ignore_garbage_types)
+        assert obj.ignored_garbage_types == tuple(ignore_garbage_types)
 
     obj.stop()
 
