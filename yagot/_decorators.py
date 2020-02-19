@@ -13,15 +13,11 @@ def assert_no_garbage(func):
     """
     Decorator that performs garbage tracking for the decorated function or
     method and that asserts that the decorated function or method does not
-    cause any garbage objects (i.e. objects Python added to the garbage
-    collector because they could not immediately be released).
+    cause any additional :term:`garbage objects` or
+    :term:`uncollectable objects` to emerge during its invocation.
 
     The decorator is signature-preserving, and the decorated function or method
     can have any signature.
-
-    Any objects Python added to the garbage collector during execution of
-    the decorated function or method will be reported by this decorator by
-    raising an AssertionError exception.
 
     The decorated function or method needs to make sure that any objects it
     creates are deleted again, either implicitly (e.g. by a local variable
@@ -42,7 +38,8 @@ def assert_no_garbage(func):
         tracker.stop()
         location = "{module}::{function}".format(
             module=func.__module__, function=func.__name__)
-        assert not tracker.garbage, tracker.format_garbage(location)
+        assert not tracker.garbage and not tracker.uncollectable_count, \
+            tracker.assert_message(location)
         return ret
 
     return functools.update_wrapper(assert_no_garbage_wrapper, func)
