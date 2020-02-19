@@ -24,12 +24,8 @@ PPRINT_RECURSION_PATTERN = re.compile(r"<Recursion on (.*) with id=([0-9]+)>")
 class GarbageTracker(object):
     """
     The GarbageTracker class provides named garbage trackers that can track
-    garbage objects that emerged during a tracking period.
-
-    Garbage objects are Python objects that cannot be immediately released when
-    the object becomes unreachable and are therefore put into the generational
-    Python garbage collector where more elaborated algorithms are used at a
-    later point in time to release the objects.
+    :term:`uncollectable objects` or :term:`garbage objects` that emerged
+    during a tracking period.
     """
 
     #: dict: Global dict of existing garbage trackers, by name.
@@ -45,7 +41,9 @@ class GarbageTracker(object):
         self._ignored = False
         self._enabled = False
         self._garbage = []
+        self._uncollectable_count = 0
         self._start_garbage_index = 0
+        self._start_uncollectable_count = 0
 
     @staticmethod
     def get_tracker(name):
@@ -80,11 +78,31 @@ class GarbageTracker(object):
     @property
     def garbage(self):
         """
-        list: List of new garbage objects that emerged during the tracking
-        period, i.e. between :meth:`~yagot.GarbageTracker.start` and
-        :meth:`~yagot.GarbageTracker.stop`.
+        list: List of new :term:`garbage objects` that emerged during the last
+        tracking period.
+
+        These objects cause increased memory usage because their deletion
+        happens at a later point in time, but they do not necessarily cause
+        memory leaks (although the list includes the
+        :term:`uncollectable objects`).
+
+        See also the :attr:`~yagot.GarbageTracker.uncollectable_count` property
+        for the number of :term:`uncollectable objects`.
         """
         return self._garbage
+
+    @property
+    def uncollectable_count(self):
+        """
+        int: Number of new :term:`uncollectable objects` that emerged during the
+        last tracking period.
+
+        These objects cause memory leaks.
+
+        See also the :attr:`~yagot.GarbageTracker.garbage` property for the
+        :term:`garbage objects`.
+        """
+        return self._uncollectable_count
 
     @property
     def enabled(self):
@@ -131,6 +149,7 @@ class GarbageTracker(object):
             gc.set_debug(0)
             gc.collect()
             self._start_garbage_index = len(gc.garbage)
+            self._start_uncollectable_count = gc.get_count()[2]
             gc.set_debug(gc.DEBUG_SAVEALL)
 
     def stop(self):
@@ -151,6 +170,7 @@ class GarbageTracker(object):
                 # If the testcase execution has decided to ignore this tracking
                 # period, do so.
                 self._garbage = []
+                self._uncollectable_count = 0
             else:
                 tmp_garbage = gc.garbage[self._start_garbage_index:]
                 ignore = False
@@ -163,14 +183,18 @@ class GarbageTracker(object):
                         ignore = True
                 if ignore:
                     self._garbage = []
+                    self._uncollectable_count = 0
                 else:
                     self._garbage = tmp_garbage
+                    self._uncollectable_count = gc.get_count()[2] - \
+                        self._start_uncollectable_count
 
-    def format_garbage(self, location=None, max=10):
+    def assert_message(self, location=None, max=10):
         # pylint: disable=redefined-builtin
         """
-        Return a formatted multi-line string for all garbage objects detected
-        during the tracking period, up to a maximum number.
+        Return a formatted multi-line string for the assertion message for
+        :term:`garbage objects` and the number of :term:`uncollectable objects`
+        detected during the tracking period.
 
         Parameters:
 
@@ -184,8 +208,10 @@ class GarbageTracker(object):
 
             :term:`unicode string`: Formatted multi-line string.
         """
-        ret_str = u"\nThere was {num} garbage object(s) caused by function " \
-            u"{loc}:\n".format(num=len(self.garbage), loc=location)
+        ret_str = u"\nThere were {num_u} uncollectable object(s) and {num_g} " \
+            u"garbage object(s) caused by function {loc}:\n". \
+            format(num_u=self.uncollectable_count, num_g=len(self.garbage),
+                   loc=location)
         for i, obj in enumerate(self.garbage):
             # self._generate_objgraph(obj)
             if i >= max:
@@ -197,15 +223,15 @@ class GarbageTracker(object):
     @staticmethod
     def format_obj(obj):
         """
-        Return a formatted string for a single garbage object.
+        Return a formatted string for a single object.
 
         Parameters:
 
-            obj (object): Garbage object.
+            obj (object): The object (usually a garbage object).
 
         Returns:
 
-            :term:`unicode string`: Formatted string for the garbage object.
+            :term:`unicode string`: Formatted string for the object.
         """
         try:
             obj_str = pprint.pformat(obj, indent=2)

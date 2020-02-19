@@ -23,6 +23,27 @@ Glossary
 
 .. glossary::
 
+    garbage objects
+       objects Python cannot immediately delete when they
+       become unreachable (e.g. when their variable goes out of scope). They
+       are put into the Python garbage collector for later deletion during
+       garbage collection using more sophisticated approaches. For example,
+       Python attempts to break up reference cycles during garbage collection.
+       Garbage objects cause increased memory usage because they are deleted
+       only at a later point in time, and there may be up to three attempts
+       of the generational garbage collector necessary to succeed in deleting
+       them, but they do not cause permanent memory leaks.
+       The overall severity of the increased memory usage issue depends on the
+       creation frequency and size of garbage objects.
+
+    uncollectable objects
+       objects Python was unable to delete during
+       garbage collection, even when running a full collection (i.e. on all
+       generations of the Python garbage collector).
+       Uncollectable objects remain allocated in the last generation of the
+       garbage collector and cause memory leaks that are only resolved when the
+       Python process terminates.
+
     string
        a :term:`unicode string` or a :term:`byte string`
 

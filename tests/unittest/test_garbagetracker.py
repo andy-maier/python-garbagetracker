@@ -4,8 +4,11 @@ Test the GarbageTracker class.
 
 from __future__ import absolute_import, print_function
 
+import six
 import uuid
 import pytest
+from collections import OrderedDict
+from xml.dom.minidom import Document
 from yagot import GarbageTracker
 from .test_decorator import SelfRef
 
@@ -134,25 +137,38 @@ def test_GarbageTracker_ignore(enable):
         assert obj.ignored is False
 
 
-def func_empty():
-    "Function without leaks that is empty."
+def func_pass():
+    "Function that does nothing"
     pass
 
 
-def func_dict_clean():
-    "Function without leaks that has a local dict with a string item."
+def func_dict_string():
+    "Function that has a local dict with a string item"
     _ = dict(a='a')
 
 
+def func_ordereddict_empty():
+    "Function that has a local empty collections.OrderedDict"
+    _ = OrderedDict()
+
+
 def func_dict_selfref():
-    "Function with leaks that has a local dict with a self-referencing item."
+    "Function that has a local dict with a self-referencing item"
     d = dict()
     d['a'] = d
 
 
 def func_class_selfref():
-    "Function with leaks that has a local object with a self-referencing attr."
+    "Function that has a local instance with self-referencing attribute"
     _ = SelfRef()
+
+
+def func_minidom_document():
+    "Function that has a local xml.minidom.Document object"
+    doc = Document()
+    elem = doc.createElement('FOO')
+    elem.setAttribute('BAR', 'bla')
+    doc.appendChild(elem)
 
 
 TESTCASES_GARBAGETRACKER_TRACK = [
@@ -167,31 +183,51 @@ TESTCASES_GARBAGETRACKER_TRACK = [
     #   * exp_garbage_types: List of expected types in the reported garbage.
 
     (
-        "Empty function",
+        func_pass.__doc__,
         dict(
-            func=func_empty,
+            func=func_pass,
             exp_garbage_types=[],
+            exp_uncollectable_count=0,
         ),
     ),
     (
-        "Function with leak-free local dict with string item",
+        func_dict_string.__doc__,
         dict(
-            func=func_dict_clean,
+            func=func_dict_string,
             exp_garbage_types=[],
+            exp_uncollectable_count=0,
         ),
     ),
     (
-        "Function with leaking dict with self-referencing dict item",
+        func_ordereddict_empty.__doc__,
+        dict(
+            func=func_ordereddict_empty,
+            exp_garbage_types=[list] if six.PY2 else [],
+            exp_uncollectable_count=0,
+        ),
+    ),
+    (
+        func_dict_selfref.__doc__,
         dict(
             func=func_dict_selfref,
             exp_garbage_types=[dict],
+            exp_uncollectable_count=0,
         ),
     ),
     (
-        "Function with leaking class with self-referencing attribute",
+        func_class_selfref.__doc__,
         dict(
             func=func_class_selfref,
             exp_garbage_types=[SelfRef, dict],
+            exp_uncollectable_count=0,
+        ),
+    ),
+    (
+        func_minidom_document.__doc__,
+        dict(
+            func=func_minidom_document,
+            exp_garbage_types=13 if six.PY2 else 10,  # not listed specifically
+            exp_uncollectable_count=0,
         ),
     ),
 ]
@@ -212,6 +248,7 @@ def test_GarbageTracker_track(desc, details, enable, ignore):
     """
     func = details['func']
     exp_garbage_types = details['exp_garbage_types']
+    exp_uncollectable_count = details['exp_uncollectable_count']
 
     obj = GarbageTracker('bla')
 
@@ -231,14 +268,21 @@ def test_GarbageTracker_track(desc, details, enable, ignore):
         # If the tracker was not enabled, we should not see any garbage
         # reported.
         assert obj.garbage == []
+        assert obj.uncollectable_count == 0
     elif ignore:
         # If the tracker was enabled but then ignored, we should also see no
         # garbage reported.
         assert obj.garbage == []
+        assert obj.uncollectable_count == 0
     else:
         # If the tracker was enabled and not ignored, we will see garbage
         # reported (if there is expected garbage).
-        assert len(obj.garbage) == len(exp_garbage_types)
-        for i, item in enumerate(obj.garbage):
-            # pylint: disable=unidiomatic-typecheck
-            assert type(item) is exp_garbage_types[i]
+        if isinstance(exp_garbage_types, int):
+            # We just check the number of garbage objects
+            assert len(obj.garbage) == exp_garbage_types
+        else:
+            assert isinstance(exp_garbage_types, list)
+            # We check the types of the garbage objects
+            garbage_types = [type(o) for o in obj.garbage]
+            assert garbage_types == exp_garbage_types
+        assert obj.uncollectable_count == exp_uncollectable_count

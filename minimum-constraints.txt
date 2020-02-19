@@ -56,8 +56,6 @@ wheel==0.33.6; python_version >= '3.8'
 
 # Direct dependencies for installation (must be consistent with requirements.txt)
 
-# ... add them here
-
 
 # Indirect dependencies for installation
 
@@ -68,6 +66,8 @@ PyYAML==5.1
 
 
 # Direct dependencies for development (must be consistent with dev-requirements.txt)
+
+six==1.10.0
 
 # Unit test (imports into testcases):
 pytest==4.3.1
