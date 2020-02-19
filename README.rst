@@ -188,8 +188,8 @@ check out specific types of objects that were used.
 As an exercise, check out the standard ``dict`` class and the
 ``collections.OrderedDict`` class by creating empty dictionaries. You will find
 that on Python 2.7, ``collections.OrderedDict`` causes garbage objects
-(in the CPython implementation,
-see `CPython issue 9825 <https://bugs.python.org/issue9825>`_).`
+(in the CPython implementation, see
+`issue9825 <https://bugs.python.org/issue9825>`_).
 
 The ``assert_no_garbage`` decorator can be combined with any other decorators in
 any order. Note that it always tracks the next inner function, so unless you
