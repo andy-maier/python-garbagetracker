@@ -27,33 +27,58 @@ Overview
 
 Yagot is Yet Another Garbage Object Tracker for Python.
 
-It provides a Python decorator named ``assert_no_garbage`` which asserts that the
-decorated function or method does not create any garbage objects.
+Here is what can you do with it:
 
-Garbage objects are Python objects that cannot be immediately released when
-the object becomes unreachable and are therefore put into the *generational
-Python garbage collector* where more elaborated algorithms are used at a later
-point in time to release the objects.
+* Find memory leaks.
 
-Garbage objects may create problems for your Python application for two reasons:
+  More specifically, determine the number of *uncollectable objects* caused by
+  a function or method.
 
-1. The time delay caused by the asynchronous processing of the Python garbage
-   collector causes the memory of the garbage objects to be allocated for longer
-   than necessary, causing increased memory consumption. The severity of this
-   problem increases with the amount and frequency of garbage objects created.
+  Uncollectable objects are objects Python was unable to release during garbage
+  collection, even when running a full collection (i.e. on all generations of
+  the Python generational garbage collector). Uncollectable objects remain
+  allocated in the last generation of the garbage collector and cause memory
+  leaks that are only resolved when the Python process terminates.
 
-2. There are cases where even the more elaborated algorithms of the Python
-   garbage collector cannot release a garbage object. In such a case, the
-   memory for the garbage garbage objects remains allocated within the Python
-   process, causing a memory leak that remains until the Python process ends.
+  Among the possible reasons for objects to become uncollectable are:
+
+  * more complicated cases of cyclic references between objects,
+
+  * reference counting bugs in Python modules implemented in native languages
+    such as C.
+
+* Reduce unnecessary memory usage caused by deferred release of objects that
+  have cyclic references.
+
+  More specifically, determine the set of *garbage objects* caused by a function
+  or method.
+
+  Garbage objects are objects Python cannot immediately release when they
+  become unreachable (e.g. when their variable goes out of scope). They
+  are put into the Python garbage collector for processing at a later point in
+  time using more sophisticated approaches. For example, Python attempts to
+  break up reference cycles during garbage collection.
+
+  Garbage objects cause increased memory usage because they are released only
+  at a later point in time. In the worst case, a garbage object needs to pass
+  through all three generations of the Python garbage collector, and each
+  subsequent generation is collected less frequently than the previous one.
+  Note that garbage objects do not necessarily cause permanent memory leaks,
+  except if they cannot be released in the last generation of the garbage
+  collector. At that point, a garbage object is also an uncollectable object.
+
+  The overall severity of the issue of increased memory usage depends on the
+  number and size of garbage objects.
+
+Yagot is designed to be useable independent of any test framework, but it can
+also be used with test frameworks such as `pytest`_, `nose`_, or `unittest`_.
+
+Yagot provides a Python decorator named ``assert_no_garbage`` which validates
+that the decorated function or method does not create any uncollectable objects
+or garbage objects, and raises an AssertionError otherwise.
 
 The ``assert_no_garbage`` decorator can be used on any function or method, but
-it makes most sense to use it on test functions. It is a signature-preserving
-decorator that supports any number of positional and keyword arguments in the
-decorated function or method, and any kind of return value(s).
-
-That decorator can be used with test functions or methods in all test
-frameworks, for example `pytest`_, `nose`_, or `unittest`_.
+it makes most sense to use it on test functions.
 
 .. _pytest: https://docs.pytest.org/
 .. _nose: https://nose.readthedocs.io/
@@ -82,7 +107,7 @@ Usage
 
 Here is an example of how to use Yagot with a pytest testcase:
 
-In an example test file ``examples/test_selfref_dict.py``, you would have:
+Consider an example test file ``examples/test_selfref_dict.py``:
 
 .. code-block:: python
 
@@ -94,7 +119,7 @@ In an example test file ``examples/test_selfref_dict.py``, you would have:
         d1['self'] = d1
 
 Running pytest on this example test file reveals the presence of garbage objects
-because it raises a test failure:
+by raising a test failure:
 
 .. code-block:: text
 
@@ -111,12 +136,13 @@ because it raises a test failure:
     =========================================== FAILURES ===========================================
     ______________________________________ test_selfref_dict _______________________________________
 
-    args = (), kwargs = {}, tracker = <yagot._garbagetracker.GarbageTracker object at 0x10e451f90>
+
+    args = (), kwargs = {}, tracker = <yagot._garbagetracker.GarbageTracker object at 0x108353250>
     ret = None, location = 'test_selfref_dict::test_selfref_dict'
 
         def assert_no_garbage_wrapper(*args, **kwargs):
             """
-            Wrapper function for the @assert_no_garbage decorator.
+            Wrapper function for the assert_no_garbage decorator.
             """
             tracker = GarbageTracker.get_tracker('yagot.assert_no_garbage')
             tracker.enable()
@@ -125,21 +151,26 @@ because it raises a test failure:
             tracker.stop()
             location = "{module}::{function}".format(
                 module=func.__module__, function=func.__name__)
-    >       assert not tracker.garbage, tracker.format_garbage(location)
+            assert not tracker.garbage and not tracker.uncollectable_count, \
+    >           tracker.assert_message(location)
     E       AssertionError:
-    E       There was 1 garbage object(s) caused by function test_selfref_dict::test_selfref_dict:
+    E       There were 0 uncollectable object(s) and 1 garbage object(s) caused by function test_selfref_dict::test_selfref_dict:
     E
-    E       1: <type 'dict'> object at 0x10e514d70:
-    E       { 'self': <Recursive reference to dict object at 0x10e514d70>}
+    E       1: <type 'dict'> object at 0x10834ee88:
+    E       { 'self': <Recursive reference to dict object at 0x10834ee88>}
 
-    yagot/_decorators.py:43: AssertionError
+    yagot/_decorators.py:42: AssertionError
     =================================== 1 failed in 0.07 seconds ===================================
 
-The AssertionError raised by Yagot shows that there was one garbage object
-detected in the decorated test function, and some details about that object.
+The AssertionError raised by Yagot shows that there were no uncollectable
+objects caused by the decorated test function, but one garbage object.
+The assertion message provides some details about that object.
 In this case, we can see that the garbage object is a ``dict`` object, and that
 its 'self' item references back to the same ``dict`` object, so there was
 a reference cycle that caused the object to become a garbage object.
+
+That reference cycle is simple enough for the Python garbage collector to break
+it up, so this garbage object does not become an uncollectable object.
 
 The failure location and source code shown by pytest is the wrapper function of
 the ``assert_no_garbage`` decorator, since this is where it is detected.
@@ -156,8 +187,9 @@ check out specific types of objects that were used.
 
 As an exercise, check out the standard ``dict`` class and the
 ``collections.OrderedDict`` class by creating empty dictionaries. You will find
-that on Python 2, ``collections.OrderedDict`` causes garbage objects (in the
-CPython implementation).
+that on Python 2.7, ``collections.OrderedDict`` causes garbage objects
+(in the CPython implementation,
+see `CPython issue 9825 <https://bugs.python.org/issue9825>`_).`
 
 The ``assert_no_garbage`` decorator can be combined with any other decorators in
 any order. Note that it always tracks the next inner function, so unless you
