@@ -7,6 +7,7 @@ Yagot - Yet Another Garbage Object Tracker for Python
    :numbered:
 
    intro.rst
+   apiref.rst
    development.rst
    appendix.rst
    changes.rst
