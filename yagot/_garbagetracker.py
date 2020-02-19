@@ -39,6 +39,7 @@ class GarbageTracker(object):
         """
         self._name = name
         self._ignored = False
+        self._ignored_garbage_types = None
         self._enabled = False
         self._garbage = []
         self._uncollectable_count = 0
@@ -119,6 +120,18 @@ class GarbageTracker(object):
         """
         return self._ignored
 
+    @property
+    def ignored_garbage_types(self):
+        """
+        Return the Python types to be ignored as garbage objects.
+
+        Returns:
+
+            list: List of Python types to be ignored, or None if no types to be
+              ignored.
+        """
+        return self._ignored_garbage_types
+
     def enable(self, enabled=True):
         """
         Enable or disable the garbage tracker.
@@ -137,6 +150,16 @@ class GarbageTracker(object):
         """
         if self.enabled:
             self._ignored = True
+
+    def ignore_garbage_types(self, types):
+        """
+        Set the specified Python types to be ignored as garbage objects.
+
+        Parameters:
+
+            types (list): List of Python types to be ignored.
+        """
+        self._ignored_garbage_types = tuple(types) if types else None
 
     def start(self):
         """
@@ -170,7 +193,6 @@ class GarbageTracker(object):
                 # If the testcase execution has decided to ignore this tracking
                 # period, do so.
                 self._garbage = []
-                self._uncollectable_count = 0
             else:
                 tmp_garbage = gc.garbage[self._start_garbage_index:]
                 ignore = False
@@ -181,13 +203,15 @@ class GarbageTracker(object):
                     # tracking period.
                     if isinstance(item, (types.FrameType, types.CodeType)):
                         ignore = True
+                    if self.ignored_garbage_types and \
+                            isinstance(item, self.ignored_garbage_types):
+                        ignore = True
                 if ignore:
                     self._garbage = []
-                    self._uncollectable_count = 0
                 else:
                     self._garbage = tmp_garbage
-                    self._uncollectable_count = gc.get_count()[2] - \
-                        self._start_uncollectable_count
+            self._uncollectable_count = gc.get_count()[2] - \
+                self._start_uncollectable_count
 
     def assert_message(self, location=None, max=10):
         # pylint: disable=redefined-builtin
