@@ -73,17 +73,18 @@ Here is what can you do with it:
 Yagot is designed to be useable independent of any test framework, but it can
 also be used with test frameworks such as `pytest`_, `nose`_, or `unittest`_.
 
-Yagot provides a Python decorator named :func:`~yagot.leak_check` which
+Yagot provides a Python decorator named `leak_check`_ which
 validates that the decorated function or method does not create any
 uncollectable objects or garbage objects, and raises an AssertionError
 otherwise.
 
-The :func:`~yagot.leak_check` decorator can be used on any function or method,
+The `leak_check`_ decorator can be used on any function or method,
 but it makes most sense to use it on test functions.
 
 .. _pytest: https://docs.pytest.org/
 .. _nose: https://nose.readthedocs.io/
 .. _unittest: https://docs.python.org/3/library/unittest.html
+.. _leak_check: https://yagot.readthedocs.io/en/latest/apiref.html#yagot.leak_check
 
 
 Installation
@@ -175,7 +176,7 @@ That reference cycle is simple enough for the Python garbage collector to break
 it up, so this garbage object does not become an uncollectable object.
 
 The failure location and source code shown by pytest is the wrapper function of
-the :func:`~yagot.leak_check` decorator, since this is where it is detected.
+the `leak_check`_ decorator, since this is where it is detected.
 The decorated function that caused the garbage objects to be created is
 reported by pytest as a failing test function, and is also mentioned in the
 assertion message using a "module::function" notation.
@@ -193,7 +194,7 @@ that on Python 2.7, ``collections.OrderedDict`` causes garbage objects
 (in the CPython implementation, see
 `issue9825 <https://bugs.python.org/issue9825>`_).
 
-The :func:`~yagot.leak_check` decorator can be combined with any other
+The `leak_check`_ decorator can be combined with any other
 decorators in any order. Note that it always tracks the next inner function,
 so unless you want to track what garbage other decorators create, you want to
 have it directly on the test function, as the innermost decorator, like in the
