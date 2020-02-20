@@ -45,6 +45,7 @@ class GarbageTracker(object):
         self._uncollectable_count = 0
         self._start_garbage_index = 0
         self._start_uncollectable_count = 0
+        self._saved_thresholds = None
 
     @staticmethod
     def get_tracker(name):
@@ -177,6 +178,8 @@ class GarbageTracker(object):
         """
         if self.enabled:
             self._ignored = False
+            self._saved_thresholds = gc.get_threshold()
+            gc.set_threshold(0, 0, 0)
             gc.set_debug(0)
             gc.collect()
             self._start_garbage_index = len(gc.garbage)
@@ -192,6 +195,7 @@ class GarbageTracker(object):
         if self.enabled:
             gc.collect()
             gc.set_debug(0)
+            gc.set_threshold(*self._saved_thresholds)
 
             # Eliminate previous content of the gc.garbage list in order to
             # show just the garbage added since start(). New uncollectable
@@ -204,15 +208,20 @@ class GarbageTracker(object):
             else:
                 tmp_garbage = gc.garbage[self._start_garbage_index:]
                 ignore = False
-                for item in tmp_garbage:
+                for i in range(self._start_garbage_index, len(gc.garbage)):
                     # pytest.raises() leaves garbage around, which normally
                     # contains frame and code objects. This is a poor man's
                     # solution to detecting that and subsequently ignoring the
                     # tracking period.
-                    if isinstance(item, (types.FrameType, types.CodeType)):
+                    # There are cases with weakly referenced objects where
+                    # isinstance(item, ...) fails with ReferenceError.
+                    # Therefore, we use direct type comparison. Also, we
+                    # don't want to match object of subclasses anyway.
+                    item_type = type(gc.garbage[i])
+                    if item_type in (types.FrameType, types.CodeType):
                         ignore = True
                     if self.ignored_garbage_types and \
-                            isinstance(item, self.ignored_garbage_types):
+                            item_type in self.ignored_garbage_types:
                         ignore = True
                 if ignore:
                     self._garbage = []
