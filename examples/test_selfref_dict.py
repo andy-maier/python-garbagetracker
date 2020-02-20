@@ -1,6 +1,6 @@
 import yagot
 
-@yagot.assert_no_garbage
+@yagot.leak_check()
 def test_selfref_dict():
 
     # Dictionary with self-referencing item:

@@ -6,18 +6,14 @@ from __future__ import absolute_import, print_function
 import functools
 from ._garbagetracker import GarbageTracker
 
-__all__ = ['assert_no_garbage']
+__all__ = ['leak_check']
 
 
-def assert_no_garbage(func):
+def leak_check(ignore_garbage=False, ignore_garbage_types=None):
     """
-    Decorator that performs garbage tracking for the decorated function or
-    method and that asserts that the decorated function or method does not
-    cause any additional :term:`garbage objects` or
-    :term:`uncollectable objects` to emerge during its invocation.
-
-    The decorator is signature-preserving, and the decorated function or method
-    can have any signature.
+    Decorator that checks for new :term:`uncollectable objects` and
+    :term:`garbage objects` caused by the decorated function or method, and
+    raises AssertionError if such objects are detected.
 
     The decorated function or method needs to make sure that any objects it
     creates are deleted again, either implicitly (e.g. by a local variable
@@ -25,21 +21,44 @@ def assert_no_garbage(func):
     created that way, but whether that is actually the case is exactly what the
     decorator tests for. Also, it is possible that your code is clean but
     other modules your code uses are not clean, and that will surface this way.
+
+    Note that this decorator has arguments, so it must be specified with
+    parenthesis, even when relying on the default argument values::
+
+        @yagot.leak_check()
+        test_something():
+            # do some tests
+
+    Parameters:
+
+        ignore_garbage (bool): Don't check for garbage objects at all.
+
+        ignore_garbage_types (:term:`py:iterable`): Iterable of Python types,
+          or `None`. Ignore garbage objects that are instances of any of the
+          specified types. `None` or an empty iterable means not to ignore any
+          types (except for :class:`py:frame` and :class:`py:code` that are
+          always ignored).
     """
 
-    def assert_no_garbage_wrapper(*args, **kwargs):
-        """
-        Wrapper function for the assert_no_garbage decorator.
-        """
-        tracker = GarbageTracker.get_tracker('yagot.assert_no_garbage')
-        tracker.enable()
-        tracker.start()
-        ret = func(*args, **kwargs)  # The decorated function
-        tracker.stop()
-        location = "{module}::{function}".format(
-            module=func.__module__, function=func.__name__)
-        assert not tracker.garbage and not tracker.uncollectable_count, \
-            tracker.assert_message(location)
-        return ret
+    def decorator_leak_check(func):
+        "Decorator function for the leak_check decorator"
 
-    return functools.update_wrapper(assert_no_garbage_wrapper, func)
+        @functools.wraps(func)
+        def wrapper_leak_check(*args, **kwargs):
+            "Wrapper function for the leak_check decorator"
+            tracker = GarbageTracker.get_tracker('yagot.leak_check')
+            tracker.enable()
+            tracker.start()
+            tracker.ignore_garbage_types(ignore_garbage_types)
+            ret = func(*args, **kwargs)  # The decorated function
+            tracker.stop()
+            location = "{module}::{function}".format(
+                module=func.__module__, function=func.__name__)
+            no_leaks = not tracker.uncollectable_count
+            no_garbage = ignore_garbage or not tracker.garbage
+            assert no_leaks and no_garbage, tracker.assert_message(location)
+            return ret
+
+        return wrapper_leak_check
+
+    return decorator_leak_check
