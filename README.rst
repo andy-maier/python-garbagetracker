@@ -73,12 +73,13 @@ Here is what can you do with it:
 Yagot is designed to be useable independent of any test framework, but it can
 also be used with test frameworks such as `pytest`_, `nose`_, or `unittest`_.
 
-Yagot provides a Python decorator named ``assert_no_garbage`` which validates
-that the decorated function or method does not create any uncollectable objects
-or garbage objects, and raises an AssertionError otherwise.
+Yagot provides a Python decorator named :func:`~yagot.leak_check` which
+validates that the decorated function or method does not create any
+uncollectable objects or garbage objects, and raises an AssertionError
+otherwise.
 
-The ``assert_no_garbage`` decorator can be used on any function or method, but
-it makes most sense to use it on test functions.
+The :func:`~yagot.leak_check` decorator can be used on any function or method,
+but it makes most sense to use it on test functions.
 
 .. _pytest: https://docs.pytest.org/
 .. _nose: https://nose.readthedocs.io/
@@ -113,7 +114,7 @@ Consider an example test file ``examples/test_selfref_dict.py``:
 
     import yagot
 
-    @yagot.assert_no_garbage
+    @yagot.leak_check()
     def test_selfref_dict():
         d1 = dict()
         d1['self'] = d1
@@ -136,30 +137,31 @@ by raising a test failure:
     =========================================== FAILURES ===========================================
     ______________________________________ test_selfref_dict _______________________________________
 
+    args = (), kwargs = {}, tracker = <yagot._garbagetracker.GarbageTracker object at 0x106d94290>
+    ret = None, location = 'test_selfref_dict::test_selfref_dict', no_leaks = True
+    no_garbage = False
 
-    args = (), kwargs = {}, tracker = <yagot._garbagetracker.GarbageTracker object at 0x108353250>
-    ret = None, location = 'test_selfref_dict::test_selfref_dict'
-
-        def assert_no_garbage_wrapper(*args, **kwargs):
-            """
-            Wrapper function for the assert_no_garbage decorator.
-            """
-            tracker = GarbageTracker.get_tracker('yagot.assert_no_garbage')
+        @functools.wraps(func)
+        def wrapper_leak_check(*args, **kwargs):
+            "Wrapper function for the leak_check decorator"
+            tracker = GarbageTracker.get_tracker('yagot.leak_check')
             tracker.enable()
             tracker.start()
+            tracker.ignore_garbage_types(ignore_garbage_types)
             ret = func(*args, **kwargs)  # The decorated function
             tracker.stop()
             location = "{module}::{function}".format(
                 module=func.__module__, function=func.__name__)
-            assert not tracker.garbage and not tracker.uncollectable_count, \
-    >           tracker.assert_message(location)
+            no_leaks = not tracker.uncollectable_count
+            no_garbage = ignore_garbage or not tracker.garbage
+    >       assert no_leaks and no_garbage, tracker.assert_message(location)
     E       AssertionError:
     E       There were 0 uncollectable object(s) and 1 garbage object(s) caused by function test_selfref_dict::test_selfref_dict:
     E
-    E       1: <type 'dict'> object at 0x10834ee88:
-    E       { 'self': <Recursive reference to dict object at 0x10834ee88>}
+    E       1: <type 'dict'> object at 0x106d8ae88:
+    E       { 'self': <Recursive reference to dict object at 0x106d8ae88>}
 
-    yagot/_decorators.py:42: AssertionError
+    yagot/_decorators.py:59: AssertionError
     =================================== 1 failed in 0.07 seconds ===================================
 
 The AssertionError raised by Yagot shows that there were no uncollectable
@@ -173,7 +175,7 @@ That reference cycle is simple enough for the Python garbage collector to break
 it up, so this garbage object does not become an uncollectable object.
 
 The failure location and source code shown by pytest is the wrapper function of
-the ``assert_no_garbage`` decorator, since this is where it is detected.
+the :func:`~yagot.leak_check` decorator, since this is where it is detected.
 The decorated function that caused the garbage objects to be created is
 reported by pytest as a failing test function, and is also mentioned in the
 assertion message using a "module::function" notation.
@@ -191,11 +193,11 @@ that on Python 2.7, ``collections.OrderedDict`` causes garbage objects
 (in the CPython implementation, see
 `issue9825 <https://bugs.python.org/issue9825>`_).
 
-The ``assert_no_garbage`` decorator can be combined with any other decorators in
-any order. Note that it always tracks the next inner function, so unless you
-want to track what garbage other decorators create, you want to have it
-directly on the test function, as the innermost decorator, like in the following
-example:
+The :func:`~yagot.leak_check` decorator can be combined with any other
+decorators in any order. Note that it always tracks the next inner function,
+so unless you want to track what garbage other decorators create, you want to
+have it directly on the test function, as the innermost decorator, like in the
+following example:
 
 .. code-block:: python
 
@@ -204,7 +206,7 @@ example:
 
     @pytest.mark.parametrize('parm2', [ ... ])
     @pytest.mark.parametrize('parm1', [ ... ])
-    @yagot.assert_no_garbage
+    @yagot.leak_check()
     def test_something(parm1, parm2):
         pass  # some test code
 

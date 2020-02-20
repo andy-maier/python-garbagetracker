@@ -155,9 +155,17 @@ class GarbageTracker(object):
         """
         Set the specified Python types to be ignored as garbage objects.
 
+        These types are in addition to :class:`py:frame` and :class:`py:code`
+        that are always ignored, because they often appear as garbage objects
+        when catching exceptions (e.g. when using :func:`pytest.raises`).
+
         Parameters:
 
-            types (list): List of Python types to be ignored.
+            types (:term:`py:iterable`): Iterable of Python types, or `None`.
+              Ignore garbage objects that are instances of any of the
+              specified types. `None` or an empty iterable means not to ignore
+              any types (except for :class:`py:frame` and :class:`py:code` that
+              are always ignored).
         """
         self._ignored_garbage_types = tuple(types) if types else None
 
