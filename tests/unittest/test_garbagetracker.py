@@ -180,10 +180,12 @@ TESTCASES_GARBAGETRACKER_TRACK = [
     # * desc: Short testcase description.
     # * details:
     #   * func: Function that may create leaks.
+    #   * ignore_garbage_types: List of types to ignore, or None.
     #   * exp_garbage_types: List of expected types in the reported garbage.
+    #   * exp_uncollectable_count: Expected number of uncollectable objects.
 
     (
-        func_pass.__doc__,
+        "Empty test function",
         dict(
             func=func_pass,
             ignore_garbage_types=None,
@@ -192,7 +194,7 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         ),
     ),
     (
-        func_dict_string.__doc__,
+        "Standard dict with string",
         dict(
             func=func_dict_string,
             ignore_garbage_types=None,
@@ -201,7 +203,7 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         ),
     ),
     (
-        func_ordereddict_empty.__doc__,
+        "Empty OrderedDict creating garbage on Python 2.7",
         dict(
             func=func_ordereddict_empty,
             ignore_garbage_types=None,
@@ -210,7 +212,7 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         ),
     ),
     (
-        func_dict_selfref.__doc__,
+        "Self-referencing class, ignoring no garbage",
         dict(
             func=func_dict_selfref,
             ignore_garbage_types=None,
@@ -219,7 +221,7 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         ),
     ),
     (
-        func_dict_selfref.__doc__,
+        "Self-referencing dict, ignoring incorrect 'list' type obj as garbage",
         dict(
             func=func_dict_selfref,
             ignore_garbage_types=[list],
@@ -228,7 +230,7 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         ),
     ),
     (
-        func_dict_selfref.__doc__,
+        "Self-referencing dict, ignoring correct 'dict' type obj as garbage",
         dict(
             func=func_dict_selfref,
             ignore_garbage_types=[dict],
@@ -237,7 +239,7 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         ),
     ),
     (
-        func_dict_selfref.__doc__,
+        "Self-referencing dict, ignoring correct 'dict' type name as garbage",
         dict(
             func=func_dict_selfref,
             ignore_garbage_types=['dict'],
@@ -246,7 +248,7 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         ),
     ),
     (
-        func_class_selfref.__doc__,
+        "SelfRef class, ignoring no garbage",
         dict(
             func=func_class_selfref,
             ignore_garbage_types=None,
@@ -255,7 +257,7 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         ),
     ),
     (
-        func_class_selfref.__doc__,
+        "SelfRef class, ignoring correct 'SelfRef' type obj as garbage",
         dict(
             func=func_class_selfref,
             ignore_garbage_types=[SelfRef],
@@ -264,7 +266,7 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         ),
     ),
     (
-        func_class_selfref.__doc__,
+        "SelfRef class, ignoring correct 'SelfRef' type name as garbage",
         dict(
             func=func_class_selfref,
             ignore_garbage_types=['tests.unittest.test_decorator.SelfRef'],
@@ -273,7 +275,7 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         ),
     ),
     (
-        func_minidom_document.__doc__,
+        "xml.dom.minidom.Document, ignoring no garbage",
         dict(
             func=func_minidom_document,
             ignore_garbage_types=None,
