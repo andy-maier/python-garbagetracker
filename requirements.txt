@@ -9,7 +9,7 @@
 
 # Direct dependencies (except pip, setuptools, wheel):
 
-# ... add them here
+six>=1.10.0
 
 
 # Indirect dependencies are not specified in this file.

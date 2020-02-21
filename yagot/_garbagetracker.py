@@ -10,6 +10,7 @@ import gc
 import pprint
 import inspect
 from datetime import datetime
+import six
 try:
     import objgraph
 except ImportError:
@@ -39,7 +40,7 @@ class GarbageTracker(object):
         """
         self._name = name
         self._ignored = False
-        self._ignored_garbage_types = None
+        self._ignored_garbage_type_names = []
         self._enabled = False
         self._garbage = []
         self._uncollectable_count = 0
@@ -122,16 +123,20 @@ class GarbageTracker(object):
         return self._ignored
 
     @property
-    def ignored_garbage_types(self):
+    def ignored_garbage_type_names(self):
         """
-        Return the Python types to be ignored as garbage objects.
+        Return the Python type names to be ignored as garbage objects.
+
+        The types :class:`py:frame` and :class:`py:code` that are always
+        ignored are included in the returned list.
 
         Returns:
 
-            list: List of Python types to be ignored, or None if no types to be
-              ignored.
+            list: List of Python type names to be ignored as represented by
+              the ``str(type)`` function (for example "int" or
+              "mymodule.MyClass").
         """
-        return self._ignored_garbage_types
+        return self._ignored_garbage_type_names
 
     def enable(self, enabled=True):
         """
@@ -139,8 +144,8 @@ class GarbageTracker(object):
 
         Parameters:
 
-            enabled (bool): Boolean enabling the garbage tracking if True,
-              and disabling the garbage tracking if False.
+            enabled (bool): Boolean enabling the garbage tracking if `True`,
+              and disabling the garbage tracking if `False`.
         """
         self._enabled = enabled
 
@@ -152,23 +157,44 @@ class GarbageTracker(object):
         if self.enabled:
             self._ignored = True
 
-    def ignore_garbage_types(self, types):
+    def ignore_garbage_types(self, type_list):
         """
-        Set the specified Python types to be ignored as garbage objects.
+        Set additional Python types to be ignored as garbage objects.
 
-        These types are in addition to :class:`py:frame` and :class:`py:code`
-        that are always ignored, because they often appear as garbage objects
-        when catching exceptions (e.g. when using :func:`pytest.raises`).
+        The specified types are in addition to the following list of types that
+        are aways ignored because they often appear as garbage objects
+        when catching exceptions (e.g. when using :func:`pytest.raises`):
+
+        * :class:`py:frame`
+        * :class:`py:code`
+
+        If the list of garbage objects detected during the tracking period
+        contains an object with a type that is to be ignored, the entire
+        tracking period is ignored.
 
         Parameters:
 
-            types (:term:`py:iterable`): Iterable of Python types, or `None`.
-              Ignore garbage objects that are instances of any of the
-              specified types. `None` or an empty iterable means not to ignore
-              any types (except for :class:`py:frame` and :class:`py:code` that
-              are always ignored).
+            type_list (:term:`py:iterable`): Iterable of Python types, or
+              `None`.
+
+              Each type can be specified as a type object or as a string with
+              the type name as represented by the ``str(type)`` function (for
+              example, "int" or "mymodule.MyClass").
+
+              `None` or an empty iterable means not to set additional types.
         """
-        self._ignored_garbage_types = tuple(types) if types else None
+        self._ignored_garbage_type_names = [
+            _type2name(types.FrameType),
+            _type2name(types.CodeType),
+        ]
+        if type_list:
+            for t in type_list:
+                if isinstance(t, type):
+                    type_name = _type2name(t)
+                else:
+                    assert isinstance(t, six.string_types)
+                    type_name = t
+                self._ignored_garbage_type_names.append(type_name)
 
     def start(self):
         """
@@ -206,27 +232,20 @@ class GarbageTracker(object):
                 # period, do so.
                 self._garbage = []
             else:
-                tmp_garbage = gc.garbage[self._start_garbage_index:]
                 ignore = False
                 for i in range(self._start_garbage_index, len(gc.garbage)):
-                    # pytest.raises() leaves garbage around, which normally
-                    # contains frame and code objects. This is a poor man's
-                    # solution to detecting that and subsequently ignoring the
-                    # tracking period.
                     # There are cases with weakly referenced objects where
                     # isinstance(item, ...) fails with ReferenceError.
                     # Therefore, we use direct type comparison. Also, we
                     # don't want to match object of subclasses anyway.
-                    item_type = type(gc.garbage[i])
-                    if item_type in (types.FrameType, types.CodeType):
+                    type_name = _type2name(type(gc.garbage[i]))
+                    if type_name in self.ignored_garbage_type_names:
                         ignore = True
-                    if self.ignored_garbage_types and \
-                            item_type in self.ignored_garbage_types:
-                        ignore = True
+                        break
                 if ignore:
                     self._garbage = []
                 else:
-                    self._garbage = tmp_garbage
+                    self._garbage = gc.garbage[self._start_garbage_index:]
             self._uncollectable_count = gc.get_count()[2] - \
                 self._start_uncollectable_count
 
@@ -326,3 +345,13 @@ def _id2addr(matchobj):
     ret = "<Recursive reference to {type} object at 0x{addr:0x}>". \
         format(type=matchobj.group(1), addr=int(matchobj.group(2)))
     return ret
+
+
+def _type2name(type_obj):
+    """
+    Return type name of a type object, as represented by `str(type_obj)`.
+    """
+    m = re.match(r"<(class|type) '(.*)'>", str(type_obj))
+    assert m is not None
+    type_name = m.group(2)
+    return type_name

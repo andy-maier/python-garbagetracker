@@ -33,11 +33,20 @@ def leak_check(ignore_garbage=False, ignore_garbage_types=None):
 
         ignore_garbage (bool): Don't check for garbage objects at all.
 
-        ignore_garbage_types (:term:`py:iterable`): Iterable of Python types,
-          or `None`. Ignore garbage objects that are instances of any of the
-          specified types. `None` or an empty iterable means not to ignore any
-          types (except for :class:`py:frame` and :class:`py:code` that are
-          always ignored).
+        ignore_garbage_types (:term:`py:iterable`): `None` or iterable of Python
+          types or type names that are set as additional garbage types to
+          ignore, in addition to :class:`py:frame` and :class:`py:code` that
+          are always ignored.
+
+          If any detected garbage object has one of the types to be ignored,
+          the entire garbage caused by the decorated function or method is
+          ignored.
+
+          Each type can be specified as a type object or as a string with
+          the type name as represented by the ``str(type)`` function (for
+          example, "int" or "mymodule.MyClass").
+
+          `None` or an empty iterable means not to ignore any types.
     """
 
     def decorator_leak_check(func):

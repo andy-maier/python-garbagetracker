@@ -237,6 +237,15 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         ),
     ),
     (
+        func_dict_selfref.__doc__,
+        dict(
+            func=func_dict_selfref,
+            ignore_garbage_types=['dict'],
+            exp_garbage_types=[],
+            exp_uncollectable_count=0,
+        ),
+    ),
+    (
         func_class_selfref.__doc__,
         dict(
             func=func_class_selfref,
@@ -250,6 +259,15 @@ TESTCASES_GARBAGETRACKER_TRACK = [
         dict(
             func=func_class_selfref,
             ignore_garbage_types=[SelfRef],
+            exp_garbage_types=[],
+            exp_uncollectable_count=0,
+        ),
+    ),
+    (
+        func_class_selfref.__doc__,
+        dict(
+            func=func_class_selfref,
+            ignore_garbage_types=['tests.unittest.test_decorator.SelfRef'],
             exp_garbage_types=[],
             exp_uncollectable_count=0,
         ),
@@ -298,7 +316,6 @@ def test_GarbageTracker_track(desc, details, enable, ignore):
 
     if ignore_garbage_types is not None:
         obj.ignore_garbage_types(ignore_garbage_types)
-        assert obj.ignored_garbage_types == tuple(ignore_garbage_types)
 
     obj.stop()
 
