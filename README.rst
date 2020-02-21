@@ -29,46 +29,26 @@ Yagot is Yet Another Garbage Object Tracker for Python.
 
 Here is what can you do with it:
 
-* Find memory leaks.
+* Determine the set of new *garbage objects* caused by a function or method.
 
-  More specifically, determine the number of *uncollectable objects* caused by
-  a function or method.
+  Garbage objects are objects Python cannot immediately release when they
+  become unreachable (e.g. when their variable goes out of scope). Most of the
+  time, this is caused by the presence of circular references into which the
+  object to be released is involved. Garbage objects are attempted to be
+  released by the garbage collector, which is designed to handle circular
+  references.
+
+* Determine the number of new *uncollectable objects* caused by a function or
+  method.
 
   Uncollectable objects are objects Python was unable to release during garbage
   collection, even when running a full collection (i.e. on all generations of
   the Python generational garbage collector). Uncollectable objects remain
-  allocated in the last generation of the garbage collector and cause memory
-  leaks that are only resolved when the Python process terminates.
+  allocated in the last generation of the garbage collector and their memory
+  remains allocated until the Python process terminates. They can be considered
+  memory leaks.
 
-  Among the possible reasons for objects to become uncollectable are:
-
-  * more complicated cases of cyclic references between objects,
-
-  * reference counting bugs in Python modules implemented in native languages
-    such as C.
-
-* Reduce unnecessary memory usage caused by deferred release of objects that
-  have cyclic references.
-
-  More specifically, determine the set of *garbage objects* caused by a function
-  or method.
-
-  Garbage objects are objects Python cannot immediately release when they
-  become unreachable (e.g. when their variable goes out of scope). They
-  are put into the Python garbage collector for processing at a later point in
-  time using more sophisticated approaches. For example, Python attempts to
-  break up reference cycles during garbage collection.
-
-  Garbage objects cause increased memory usage because they are released only
-  at a later point in time. In the worst case, a garbage object needs to pass
-  through all three generations of the Python garbage collector, and each
-  subsequent generation is collected less frequently than the previous one.
-  Note that garbage objects do not necessarily cause permanent memory leaks,
-  except if they cannot be released in the last generation of the garbage
-  collector. At that point, a garbage object is also an uncollectable object.
-
-  The overall severity of the issue of increased memory usage depends on the
-  number and size of garbage objects.
+See section `Background`_ for more detailed explanations.
 
 Yagot is designed to be useable independent of any test framework, but it can
 also be used with test frameworks such as `pytest`_, `nose`_, or `unittest`_.
@@ -78,8 +58,8 @@ Yagot does not require a debug build of Python; it works with a normal
 
 Yagot provides a Python decorator named `leak_check`_ which
 validates that the decorated function or method does not create any
-uncollectable objects or garbage objects, and raises an AssertionError
-otherwise.
+uncollectable objects or garbage objects, and raises an
+AssertionError otherwise.
 
 The `leak_check`_ decorator can be used on any function or method,
 but it makes most sense to use it on test functions.
@@ -88,6 +68,7 @@ but it makes most sense to use it on test functions.
 .. _nose: https://nose.readthedocs.io/
 .. _unittest: https://docs.python.org/3/library/unittest.html
 .. _leak_check: https://yagot.readthedocs.io/en/latest/apiref.html#yagot.leak_check
+.. _Background: https://yagot.readthedocs.io/en/latest/background.html#Background
 
 
 Installation
@@ -173,9 +154,9 @@ objects caused by the decorated test function, but one garbage object.
 The assertion message provides some details about that object.
 In this case, we can see that the garbage object is a ``dict`` object, and that
 its 'self' item references back to the same ``dict`` object, so there was
-a reference cycle that caused the object to become a garbage object.
+a circular reference that caused the object to become a garbage object.
 
-That reference cycle is simple enough for the Python garbage collector to break
+That circular reference is simple enough for the Python garbage collector to break
 it up, so this garbage object does not become an uncollectable object.
 
 The failure location and source code shown by pytest is the wrapper function of

@@ -19,8 +19,14 @@ There are two main elements of the API:
   decorator uses and that other packages building on Yagot can also use.
 
 
+yagot.leak_check
+----------------
+
 .. autofunction:: yagot.leak_check
 
+
+yagot.GarbageTracker
+--------------------
 
 .. autoclass:: yagot.GarbageTracker
    :members:
@@ -37,3 +43,16 @@ There are two main elements of the API:
       :attributes:
 
    .. rubric:: Details
+
+
+yagot.__version__
+-----------------
+
+The version of the yagot package can be accessed by
+programs using the ``yagot.__version__`` variable:
+
+.. autodata:: yagot._version.__version__
+
+Note: For tooling reasons, the variable is shown as
+``yagot._version.__version__``, but it should be used as
+``yagot.__version__``.

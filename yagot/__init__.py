@@ -3,7 +3,7 @@ Yagot - Yet Another Garbage Object Tracker for Python.
 
 If the objects that are created and deleted again cannot be completely
 released if their reference count drops to zero (e.g. in the presence of
-reference cycles), Python puts them into the garbage collector for
+circular references), Python puts them into the garbage collector for
 subsequent, more elaborate treatment. That more elaborate treatment is able
 to release some of these objects, but not all of them. The objects that can
 eventually be released only create a delay in being released, while objects
