@@ -73,6 +73,9 @@ Here is what can you do with it:
 Yagot is designed to be useable independent of any test framework, but it can
 also be used with test frameworks such as `pytest`_, `nose`_, or `unittest`_.
 
+Yagot does not require a debug build of Python; it works with a normal
+(non-debug) build of Python.
+
 Yagot provides a Python decorator named `leak_check`_ which
 validates that the decorated function or method does not create any
 uncollectable objects or garbage objects, and raises an AssertionError
