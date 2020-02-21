@@ -13,7 +13,7 @@ class SelfRef(object):
     """
     A self-referencing class, for testing memory leaks.
 
-    Due to the reference circle it creates, objects of this class cannot be
+    Due to the circular reference it creates, objects of this class cannot be
     deleted by the reference count based cleanup mechanism of Python, and
     Pythion will put them into the garbage where the garbage tracker will
     detect them.
