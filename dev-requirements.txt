@@ -11,8 +11,6 @@
 
 # Direct dependencies:
 
-six>=1.10.0
-
 # Unit test (imports into testcases):
 # pytest 5.0.0 has removed support for Python < 3.5
 # pytest 4.3.1 solves an issue on Python 3 with minimum package levels
