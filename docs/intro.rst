@@ -4,44 +4,46 @@
 Introduction
 ============
 
-Yagot is Yet Another Garbage Object Tracker for Python.
+Yagot (Yet Another Garbage Object Tracker) is a tool for Python developers to
+help you finding issues with garbage collection and memory leaks:
 
-Here is what can you do with it:
-
-* Determine the set of new *garbage objects* caused by a function or method.
+* It can determine the set of new *garbage objects* caused by a function or
+  method.
 
   Garbage objects are objects Python cannot immediately release when they
-  become unreachable (e.g. when their variable goes out of scope). Most of the
-  time, this is caused by the presence of circular references into which the
-  object to be released is involved. Garbage objects are attempted to be
-  released by the garbage collector, which is designed to handle circular
-  references.
+  become unreachable (e.g. when their variable goes out of scope). Frequently
+  this is caused by the presence of circular references into which the
+  object to be released is involved. The garbage collector, which is designed
+  to handle circular references, attempts to release garbage objects.
 
-* Determine the number of new *uncollectable objects* caused by a function or
-  method.
+* It can determine the number of new *uncollectable objects* caused by a
+  function or method.
 
   Uncollectable objects are objects Python was unable to release during garbage
   collection, even when running a full collection (i.e. on all generations of
   the Python generational garbage collector). Uncollectable objects remain
-  allocated in the last generation of the garbage collector and their memory
-  remains allocated until the Python process terminates. They can be considered
-  memory leaks.
+  allocated in the last generation of the garbage collector. On each run on
+  its last generation, the garbage collector attempts to release these objects.
+  It seems to be rare that these continued attempts eventually succeed, so
+  these objects can basically be considered memory leaks.
 
-See section :ref:`Background` for more detailed explanations.
+See section
+:ref:`Background`
+for more detailed explanations.
 
 Yagot is designed to be useable independent of any test framework, but it can
 also be used with test frameworks such as `pytest`_, `nose`_, or `unittest`_.
 
-Yagot does not require a debug build of Python; it works with a normal
-(non-debug) build of Python.
+Yagot works with a normal (non-debug) build of Python.
 
-Yagot provides a Python decorator named :func:`~yagot.leak_check` which
-validates that the decorated function or method does not create any
+Yagot is simple to use: It provides a Python decorator named
+:func:`~yagot.leak_check`
+which validates that the decorated function or method does not create any
 uncollectable objects or garbage objects, and raises an
-:exc:`~py:exceptions.AssertionError` otherwise.
-
-The :func:`~yagot.leak_check` decorator can be used on any function or method,
-but it makes most sense to use it on test functions.
+:exc:`~py:exceptions.AssertionError`
+otherwise. Simply use the decorator on a function you want to check. It can be
+used on any function or method, but it makes most sense to use it on test
+functions.
 
 .. _pytest: https://docs.pytest.org/
 .. _nose: https://nose.readthedocs.io/
@@ -134,7 +136,7 @@ If the test function is too complex to identify the culprit, it can be split
 into multiple simpler test functions, or new test functions can be added to
 check out specific types of objects that were used.
 
-As an exercise, check out the standard :class:`py:dict` class and the
+As an exercise, test the standard :class:`py:dict` class and the
 :class:`py:collections.OrderedDict` class by creating empty dictionaries. You
 will find that on Python 2.7, :class:`py:collections.OrderedDict` causes
 garbage objects (in the CPython implementation, see
