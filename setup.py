@@ -3,6 +3,7 @@
 Python setup script for the Yagot project.
 """
 
+import sys
 import os
 import re
 import setuptools
@@ -57,6 +58,11 @@ dependency_links = [req for req in requirements
                     if req and re.match(r'[^:]+://', req)]
 package_version = get_version(os.path.join('yagot', '_version.py'))
 
+if 'develop' in sys.argv:
+    ext_modules = [setuptools.Extension('test_leaky', ['tests/test_leaky.c'])]
+else:
+    ext_modules = []
+
 # Docs on setup():
 # * https://docs.python.org/2.7/distutils/apiref.html?
 #   highlight=setup#distutils.core.setup
@@ -67,11 +73,18 @@ setuptools.setup(
     version=package_version,
     packages=[
         'yagot',
+        'yagot_pytest',
     ],
     include_package_data=True,  # as specified in MANIFEST.in
     scripts=[
         # add any scripts
     ],
+    entry_points={
+        'pytest11': [
+            'yagot = yagot_pytest.plugin',
+        ],
+    },
+    ext_modules=ext_modules,
     install_requires=install_requires,
     dependency_links=dependency_links,
 

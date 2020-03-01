@@ -8,15 +8,16 @@ This section describes the API of Yagot.
 
 There are two main elements of the API:
 
-* :func:`yagot.leak_check`: A decorator that checks for new
-  :term:`uncollectable objects` and optionally :term:`garbage objects` caused
-  by the decorated function or method and raises AssertionError if detected.
-  This is what a Python developer in search of memory leaks would be using.
+* :func:`yagot.leak_check`: A decorator that checks for
+  :term:`uncollectable objects` and optionally for :term:`collected objects`
+  caused by the decorated function or method and raises AssertionError if
+  detected.
 
-* :class:`yagot.GarbageTracker`: A class that detects
-  :term:`uncollectable objects` and :term:`garbage objects` created during a
-  tracking period. This is a plumbing class the :func:`yagot.leak_check`
-  decorator uses and that other packages building on Yagot can also use.
+* :class:`yagot.GarbageTracker`: A class that checks for
+  :term:`uncollectable objects` and optionally for :term:`collected objects`
+  caused during a tracking period. This is a plumbing class the
+  :func:`yagot.leak_check` decorator and the pytest plugin of Yagot use, and
+  that other packages building on Yagot can also use.
 
 
 yagot.leak_check

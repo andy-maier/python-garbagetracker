@@ -31,26 +31,29 @@ def test_leaks_empty():
 
 
 @pytest.mark.xfail(raises=AssertionError, strict=True)
-@leak_check()
+@leak_check(check_collected=True)
 def test_leaks_selfref_1():
     """
-    Test function with SelfRef garbage object (that intentionally fails).
+    Test function with SelfRef collectable object when checking for
+    collected objects, causing the check to raise AssertionError.
     """
     _ = SelfRef()
 
 
-@leak_check(ignore_garbage=True)
+@leak_check(check_collected=False)
 def test_leaks_selfref_2():
     """
-    Test function with SelfRef garbage object while ignoring all garbage
-    objects.
+    Test function with SelfRef collectable object when checking for
+    uncollectable objects. Because it does not check for collectable
+    objects, the check succeeds.
     """
     _ = SelfRef()
 
 
-@leak_check(ignore_garbage_types=[SelfRef])
-def test_leaks_selfref_2():
+@leak_check(check_collected=True, ignore_types=[SelfRef])
+def test_leaks_selfref_3():
     """
-    Test function with SelfRef garbage object while ignoring SelfRef types.
+    Test function with SelfRef collectable object when checking for
+    collected objects but ignoring SelfRef types.
     """
     _ = SelfRef()

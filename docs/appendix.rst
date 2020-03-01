@@ -92,20 +92,24 @@ Glossary
 
 .. glossary::
 
-    garbage objects
+    collectable objects
        objects Python cannot immediately release when they become unreachable
-       (e.g. when their variable goes out of scope). Most of the time, this is
-       caused by the presence of circular references into which the object to be
-       released is involved. Garbage objects are attempted to be released by the
-       garbage collector, which is designed to handle circular references.
+       (e.g. when their variable goes out of scope) and that are therefore
+       supposed to be released by the Python garbage collector. Most of the
+       time, this is caused by the presence of circular references into which
+       the object to be released is involved. The Python garbage collector is
+       designed to handle circular references.
+
+    collected objects
+       :term:`collectable objects` that have successfully been released by the
+       Python garbage collector.
 
     uncollectable objects
-       objects Python was unable to release during garbage collection, even when
-       running a full collection (i.e. on all generations of the Python
-       generational garbage collector). Uncollectable objects remain allocated
-       in the last generation of the garbage collector and their memory remains
-       allocated until the Python process terminates. They can be considered
-       memory leaks.
+       :term:`collectable objects` that could not be released by the Python
+       garbage collector, even when running a full collection. Uncollectable
+       objects remain allocated in the last generation of the garbage collector
+       and their memory remains allocated until the Python process terminates.
+       They can be considered memory leaks.
 
     string
        a :term:`unicode string` or a :term:`byte string`

@@ -14,6 +14,8 @@
 /*.done
 *.pyc
 *.pyo
+*.so
+*.dll
 *.log
 *.tmp
 tmp.*

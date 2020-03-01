@@ -120,10 +120,10 @@ If you want to understand this in more detail, here are a few good resources:
 - `Object resurrection (Wikipedia) <https://en.wikipedia.org/wiki/Object_resurrection>`_
 
 
-.. _`The issues with uncollectable and garbage objects`:
+.. _`The issues with collected and uncollectable objects`:
 
-The issues with uncollectable and garbage objects
--------------------------------------------------
+The issues with collected and uncollectable objects
+---------------------------------------------------
 
 For short-running Python programs (e.g. command line utilities), it is mostly
 not so important if there are some memory leaks and other resource leaks. On
@@ -139,8 +139,8 @@ programs. Therefore, resource usage in a Python module should be designed with
 the worst case assumption in mind, i.e. that it is used by an infinitely running
 piece of code.
 
-The remainder of this section explains the issues with uncollectable and
-garbage objects caused during object release and how to address them:
+The remainder of this section explains the issues with collected and
+uncollectable objects caused during object release and how to address them:
 
 * Issues with :term:`uncollectable objects`:
 
@@ -156,7 +156,7 @@ garbage objects caused during object release and how to address them:
   that can detect uncollectable objects and then analyze each case to find out
   what caused the object to be uncollectable.
 
-* Issues with :term:`garbage objects`:
+* Issues with :term:`collected objects`:
 
   - Increased processing overhead caused by the collector runs (compared to
     immediate release based on reference counting).
@@ -168,10 +168,10 @@ garbage objects caused during object release and how to address them:
     will run for the next time. Automatic runs of the garbage collector are
     triggered by heuristics that are based on the number of objects and not on
     the amount of memory bound to these objects, so it is possible to have
-    a small number of garbage objects with large amounts of memory allocated,
-    that are still not triggering a garbage collector run.
+    a small number of collectable objects with large amounts of memory
+    allocated, that are still not triggering a garbage collector run.
 
-  Suitable measures to address these issues with garbage objects:
+  Suitable measures to address these issues with collected objects:
 
   - Redesign to avoid circular references.
 
@@ -226,7 +226,7 @@ This is basically the approach Yagot uses, although in a more automated fashion.
     $ python
     >>> import gc
     >>> gc.collect()   # Run full garbage collection to have a reference
-    0                  # No garbage objects collected initially (in this simple case)
+    0                  # No objects collected initially (in this simple case)
     >>> obj = dict()
     >>> len(gc.get_referrers(obj))
     1                 # The dict object has one referrer (the 'obj' variable)
@@ -234,7 +234,7 @@ This is basically the approach Yagot uses, although in a more automated fashion.
     >>> len(gc.get_referrers(obj))
     2                 # The dict object now in addition has its 'self' item as a referrer
     >>> gc.collect()
-    0                  # Still no new garbage objects collected
+    0                  # Still no new objects collected
     >>> del obj        # The dict object becomes unreachable ...
     >>> gc.collect()
     1                  # ... and was released by the next garbage collection run
