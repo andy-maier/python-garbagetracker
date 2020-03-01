@@ -58,31 +58,37 @@ environment:
 ##      UNIX_PATH: C:\cygwin\bin
 ##      PYTHON_CMD: python2.7
 ##      PIP_CMD: pip
+##      CYGWIN_PYTHON_DEVEL: python27-devel
 
 #    - TOX_ENV: cygwin64_py27
 #      UNIX_PATH: C:\cygwin64\bin
 #      PYTHON_CMD: python2.7
 #      PIP_CMD: pip
+#      CYGWIN_PYTHON_DEVEL: python27-devel
 
 #    - TOX_ENV: cygwin32_py36
 #      UNIX_PATH: C:\cygwin\bin
 #      PYTHON_CMD: python3.6
 #      PIP_CMD: pip
+#      CYGWIN_PYTHON_DEVEL: python36-devel
 
 #    - TOX_ENV: cygwin64_py36
 #      UNIX_PATH: C:\cygwin64\bin
 #      PYTHON_CMD: python3.6
 #      PIP_CMD: pip
+#      CYGWIN_PYTHON_DEVEL: python36-devel
 
 #    - TOX_ENV: cygwin32_py38
 #      UNIX_PATH: C:\cygwin\bin
 #      PYTHON_CMD: python3.8
 #      PIP_CMD: pip
+#      CYGWIN_PYTHON_DEVEL: python38-devel
 
     - TOX_ENV: cygwin64_py38
       UNIX_PATH: C:\cygwin64\bin
       PYTHON_CMD: python3.8
       PIP_CMD: pip
+      CYGWIN_PYTHON_DEVEL: python38-devel
 
 configuration:
 # These values will become the values of the PACKAGE_LEVEL env.var.
@@ -135,8 +141,8 @@ install:
   - 'if "%UNIX_PATH%"=="C:\cygwin64\bin" ( C:\cygwin64\setup-x86_64.exe -qnNdO -R C:/cygwin64 -P python2 )'
 
   # Install Python development packages on CygWin
-  - 'if "%UNIX_PATH%"=="C:\cygwin\bin" ( C:\cygwin\setup-x86.exe -qnNdO -R C:/cygwin -P python2-devel -P python3-devel )'
-  - 'if "%UNIX_PATH%"=="C:\cygwin64\bin" ( C:\cygwin64\setup-x86_64.exe -qnNdO -R C:/cygwin64 -P python2-devel -P python3-devel )'
+  - 'if "%UNIX_PATH%"=="C:\cygwin\bin" ( C:\cygwin\setup-x86.exe -qnNdO -R C:/cygwin -P %CYGWIN_PYTHON_DEVEL% )'
+  - 'if "%UNIX_PATH%"=="C:\cygwin64\bin" ( C:\cygwin64\setup-x86_64.exe -qnNdO -R C:/cygwin64 -P %CYGWIN_PYTHON_DEVEL%  )'
 
   # Verify that Python command is available, and fail if not
   - if "%UNIX_PATH%"=="none" ( where %PYTHON_CMD% )

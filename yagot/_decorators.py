@@ -9,10 +9,10 @@ from ._garbagetracker import GarbageTracker
 __all__ = ['leak_check']
 
 
-def leak_check(ignore_garbage=False, ignore_garbage_types=None):
+def leak_check(check_collected=False, ignore_types=None):
     """
-    Decorator that checks for new :term:`uncollectable objects` and
-    :term:`garbage objects` caused by the decorated function or method, and
+    Decorator that checks for :term:`uncollectable objects` and optionally for
+    :term:`collected objects` caused by the decorated function or method, and
     raises AssertionError if such objects are detected.
 
     The decorated function or method needs to make sure that any objects it
@@ -31,16 +31,17 @@ def leak_check(ignore_garbage=False, ignore_garbage_types=None):
 
     Parameters:
 
-        ignore_garbage (bool): Don't check for garbage objects at all.
+        check_collected (bool): Boolean adding checks for
+          :term:`collected objects` (in addition to
+          :term:`uncollectable objects` that are always checked for).
 
-        ignore_garbage_types (:term:`py:iterable`): `None` or iterable of Python
+        ignore_types (:term:`py:iterable`): `None` or iterable of Python
           types or type names that are set as additional garbage types to
           ignore, in addition to :class:`py:frame` and :class:`py:code` that
           are always ignored.
 
-          If any detected garbage object has one of the types to be ignored,
-          the entire garbage caused by the decorated function or method is
-          ignored.
+          If any detected object has one of the types to be ignored, the entire
+          set of objects caused by the decorated function or method is ignored.
 
           Each type can be specified as a type object or as a string with
           the type name as represented by the ``str(type)`` function (for
@@ -55,17 +56,15 @@ def leak_check(ignore_garbage=False, ignore_garbage_types=None):
         @functools.wraps(func)
         def wrapper_leak_check(*args, **kwargs):
             "Wrapper function for the leak_check decorator"
-            tracker = GarbageTracker.get_tracker('yagot.leak_check')
-            tracker.enable()
+            tracker = GarbageTracker.get_tracker()
+            tracker.enable(check_collected)
             tracker.start()
-            tracker.ignore_garbage_types(ignore_garbage_types)
+            tracker.ignore_types(ignore_types)
             ret = func(*args, **kwargs)  # The decorated function
             tracker.stop()
             location = "{module}::{function}".format(
                 module=func.__module__, function=func.__name__)
-            no_leaks = not tracker.uncollectable_count
-            no_garbage = ignore_garbage or not tracker.garbage
-            assert no_leaks and no_garbage, tracker.assert_message(location)
+            assert not tracker.garbage, tracker.assert_message(location)
             return ret
 
         return wrapper_leak_check

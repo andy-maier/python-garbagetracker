@@ -5,7 +5,6 @@ Test the GarbageTracker class.
 from __future__ import absolute_import, print_function
 
 import six
-import uuid
 import pytest
 from collections import OrderedDict
 from xml.dom.minidom import Document
@@ -17,104 +16,67 @@ def test_GarbageTracker_get_tracker():
     """
     Test function for GarbageTracker.get_tracker().
     """
-    # Since the trackers are module-global, other testcases may have already
-    # created trackers. We just check the additional ones this testcase creates.
-
-    name = "test_{}".format(uuid.uuid4())
-    assert name not in GarbageTracker.trackers
-
-    tracker1 = GarbageTracker.get_tracker(name)
-
-    assert name in GarbageTracker.trackers
-
-    tracker2 = GarbageTracker.get_tracker(name)
-
+    tracker1 = GarbageTracker.get_tracker()
+    tracker2 = GarbageTracker.get_tracker()
     assert tracker1 is tracker2
 
 
-TESTCASES_GARBAGETRACKER_INIT = [
-
-    # Testcases for GarbageTracker.__init__()
-
-    # Each list item is a testcase tuple with these items:
-    # * desc: Short testcase description.
-    # * details:
-    #   * args: List of positional arguments for __init__().
-    #   * kwargs: Dict of keyword arguments for __init__().
-    #   * exp_attrs: Dict of expected attributes of the generated object or None
-    #   * exp_exc_types: Expected exception type(s), or None.
-
-    (
-        "No init arguments",
-        dict(
-            args=[],
-            kwargs=dict(),
-            exp_attrs=None,
-            exp_exc_types=TypeError,
-        ),
-    ),
-    (
-        "Only the required arguments",
-        dict(
-            args=[],
-            kwargs=dict(
-                name='bla',
-            ),
-            exp_attrs=dict(
-                name='bla',
-                garbage=[],
-                ignored=False,
-                enabled=False,
-            ),
-            exp_exc_types=None,
-        ),
-    ),
-]
-
-
-@pytest.mark.parametrize(
-    "desc, details",
-    TESTCASES_GARBAGETRACKER_INIT)
-def test_GarbageTracker_init(desc, details):
-    # pylint: disable=unused-argument
+def test_GarbageTracker_init():
     """
     Test function for GarbageTracker.__init__().
     """
-    args = details['args']
-    kwargs = details['kwargs']
-    exp_attrs = details['exp_attrs']
-    exp_exc_types = details['exp_exc_types']
 
-    if exp_exc_types:
-        with pytest.raises(exp_exc_types):
+    # The code to be tested
+    obj = GarbageTracker()
 
-            # The code to be tested
-            GarbageTracker(*args, **kwargs)
-
-    else:
-
-        # The code to be tested
-        obj = GarbageTracker(*args, **kwargs)
-
-        for name in exp_attrs:
-            exp_attr = exp_attrs[name]
-            assert getattr(obj, name) == exp_attr
+    assert obj.enabled is False
+    assert obj.ignored is False
+    assert obj.check_collected is False
+    assert obj.ignored_type_names == []
+    assert obj.garbage == []
 
 
-def test_GarbageTracker_enable():
+@pytest.mark.parametrize(
+    "kwargs", [
+        dict(),
+        dict(check_collected=False),
+        dict(check_collected=True),
+    ])
+def test_GarbageTracker_enable(kwargs):
     """
     Test function for GarbageTracker.enable().
     """
-    obj = GarbageTracker('bla')
+    exp_check_collected = kwargs.get('check_collected', False)
+    obj = GarbageTracker()
     assert obj.enabled is False
 
     # The code to be tested
-    obj.enable()
+    obj.enable(**kwargs)
 
     assert obj.enabled is True
+    assert obj.check_collected == exp_check_collected
+
     # Check that otherwise nothing happened
     assert obj.ignored is False
+    assert obj.ignored_type_names == []
     assert obj.garbage == []
+
+
+@pytest.mark.parametrize(
+    "enable", [True, False])
+def test_GarbageTracker_disable(enable):
+    """
+    Test function for GarbageTracker.disable().
+    """
+    obj = GarbageTracker()
+    if enable:
+        obj.enable()
+    assert obj.enabled == enable
+
+    # The code to be tested
+    obj.disable()
+
+    assert obj.enabled is False
 
 
 @pytest.mark.parametrize(
@@ -123,8 +85,7 @@ def test_GarbageTracker_ignore(enable):
     """
     Test function for GarbageTracker.ignore().
     """
-    obj = GarbageTracker('bla')
-    assert obj.enabled is False
+    obj = GarbageTracker()
     if enable:
         obj.enable()
 
@@ -180,107 +141,101 @@ TESTCASES_GARBAGETRACKER_TRACK = [
     # * desc: Short testcase description.
     # * details:
     #   * func: Function that may create leaks.
-    #   * ignore_garbage_types: List of types to ignore, or None.
-    #   * exp_garbage_types: List of expected types in the reported garbage.
-    #   * exp_uncollectable_count: Expected number of uncollectable objects.
+    #   * ignore_types: List of types to ignore, or None.
+    #   * exp_collected_types: List of expected object types when checking
+    #     for uncollectable and collected objects.
+    #   * exp_uncollectable_types: List of expected object types when checking
+    #     for uncollectable objects.
 
     (
         "Empty test function",
         dict(
             func=func_pass,
-            ignore_garbage_types=None,
-            exp_garbage_types=[],
-            exp_uncollectable_count=0,
+            ignore_types=None,
+            exp_collected_types=[],
+            exp_uncollectable_types=[],
         ),
     ),
     (
         "Standard dict with string",
         dict(
             func=func_dict_string,
-            ignore_garbage_types=None,
-            exp_garbage_types=[],
-            exp_uncollectable_count=0,
+            ignore_types=None,
+            exp_collected_types=[],
+            exp_uncollectable_types=[],
         ),
     ),
     (
         "Empty OrderedDict creating garbage on Python 2.7",
         dict(
             func=func_ordereddict_empty,
-            ignore_garbage_types=None,
-            exp_garbage_types=[list] if six.PY2 else [],
-            exp_uncollectable_count=0,
+            ignore_types=None,
+            exp_collected_types=[list] if six.PY2 else [],
+            exp_uncollectable_types=[],
         ),
     ),
     (
-        "Self-referencing class, ignoring no garbage",
+        "Self-referencing dict, ignoring no garbage",
         dict(
             func=func_dict_selfref,
-            ignore_garbage_types=None,
-            exp_garbage_types=[dict],
-            exp_uncollectable_count=0,
+            ignore_types=None,
+            exp_collected_types=[dict],
+            exp_uncollectable_types=[],
+            pdb=False,
         ),
     ),
     (
         "Self-referencing dict, ignoring incorrect 'list' type obj as garbage",
         dict(
             func=func_dict_selfref,
-            ignore_garbage_types=[list],
-            exp_garbage_types=[dict],
-            exp_uncollectable_count=0,
+            ignore_types=[list],
+            exp_collected_types=[dict],
+            exp_uncollectable_types=[],
         ),
     ),
     (
         "Self-referencing dict, ignoring correct 'dict' type obj as garbage",
         dict(
             func=func_dict_selfref,
-            ignore_garbage_types=[dict],
-            exp_garbage_types=[],
-            exp_uncollectable_count=0,
+            ignore_types=[dict],
+            exp_collected_types=[],
+            exp_uncollectable_types=[],
         ),
     ),
     (
         "Self-referencing dict, ignoring correct 'dict' type name as garbage",
         dict(
             func=func_dict_selfref,
-            ignore_garbage_types=['dict'],
-            exp_garbage_types=[],
-            exp_uncollectable_count=0,
+            ignore_types=['dict'],
+            exp_collected_types=[],
+            exp_uncollectable_types=[],
         ),
     ),
     (
         "SelfRef class, ignoring no garbage",
         dict(
             func=func_class_selfref,
-            ignore_garbage_types=None,
-            exp_garbage_types=[SelfRef, dict],
-            exp_uncollectable_count=0,
+            ignore_types=None,
+            exp_collected_types=[SelfRef, dict],
+            exp_uncollectable_types=[],
         ),
     ),
     (
         "SelfRef class, ignoring correct 'SelfRef' type obj as garbage",
         dict(
             func=func_class_selfref,
-            ignore_garbage_types=[SelfRef],
-            exp_garbage_types=[],
-            exp_uncollectable_count=0,
+            ignore_types=[SelfRef],
+            exp_collected_types=[],
+            exp_uncollectable_types=[],
         ),
     ),
     (
         "SelfRef class, ignoring correct 'SelfRef' type name as garbage",
         dict(
             func=func_class_selfref,
-            ignore_garbage_types=['tests.unittest.test_decorator.SelfRef'],
-            exp_garbage_types=[],
-            exp_uncollectable_count=0,
-        ),
-    ),
-    (
-        "xml.dom.minidom.Document, ignoring no garbage",
-        dict(
-            func=func_minidom_document,
-            ignore_garbage_types=None,
-            exp_garbage_types=13 if six.PY2 else 10,  # not listed specifically
-            exp_uncollectable_count=0,
+            ignore_types=['tests.unittest.test_decorator.SelfRef'],
+            exp_collected_types=[],
+            exp_uncollectable_types=[],
         ),
     ),
 ]
@@ -291,23 +246,30 @@ TESTCASES_GARBAGETRACKER_TRACK = [
 @pytest.mark.parametrize(
     "enable", [True, False])
 @pytest.mark.parametrize(
+    "check_collected", [True, False])
+@pytest.mark.parametrize(
     "desc, details",
     TESTCASES_GARBAGETRACKER_TRACK)
-def test_GarbageTracker_track(desc, details, enable, ignore):
+def test_GarbageTracker_track(desc, details, check_collected, enable, ignore):
     # pylint: disable=unused-argument
     """
     Test function for tracking garbage using
     GarbageTracker.start()/stop()/garbage.
     """
     func = details['func']
-    ignore_garbage_types = details['ignore_garbage_types']
-    exp_garbage_types = details['exp_garbage_types']
-    exp_uncollectable_count = details['exp_uncollectable_count']
+    ignore_types = details['ignore_types']
+    exp_collected_types = details['exp_collected_types']
+    exp_uncollectable_types = details['exp_uncollectable_types']
+    use_pdb = details.get('pdb', False)
 
-    obj = GarbageTracker('bla')
+    if use_pdb:
+        import pdb
+        pdb.set_trace()
+
+    obj = GarbageTracker()
 
     if enable:
-        obj.enable()
+        obj.enable(check_collected)
 
     obj.start()
 
@@ -316,8 +278,8 @@ def test_GarbageTracker_track(desc, details, enable, ignore):
     if ignore:
         obj.ignore()
 
-    if ignore_garbage_types is not None:
-        obj.ignore_garbage_types(ignore_garbage_types)
+    if ignore_types is not None:
+        obj.ignore_types(ignore_types)
 
     obj.stop()
 
@@ -325,21 +287,23 @@ def test_GarbageTracker_track(desc, details, enable, ignore):
         # If the tracker was not enabled, we should not see any garbage
         # reported.
         assert obj.garbage == []
-        assert obj.uncollectable_count == 0
     elif ignore:
         # If the tracker was enabled but then ignored, we should also see no
         # garbage reported.
         assert obj.garbage == []
-        assert obj.uncollectable_count == 0
     else:
         # If the tracker was enabled and not ignored, we will see garbage
         # reported (if there is expected garbage).
+        if check_collected:
+            exp_garbage_types = exp_collected_types
+        else:
+            exp_garbage_types = exp_uncollectable_types
         if isinstance(exp_garbage_types, int):
-            # We just check the number of garbage objects
+            # We just check the number of objects
             assert len(obj.garbage) == exp_garbage_types
         else:
             assert isinstance(exp_garbage_types, list)
-            # We check the types of the garbage objects
+            # We check the types of the objects
             garbage_types = [type(o) for o in obj.garbage]
-            assert garbage_types == exp_garbage_types
-        assert obj.uncollectable_count == exp_uncollectable_count
+            assert garbage_types == exp_garbage_types, \
+                "Garbage objects: {}".format(obj.garbage)

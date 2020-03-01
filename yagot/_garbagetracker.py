@@ -24,88 +24,34 @@ PPRINT_RECURSION_PATTERN = re.compile(r"<Recursion on (.*) with id=([0-9]+)>")
 
 class GarbageTracker(object):
     """
-    The GarbageTracker class provides named garbage trackers that can track
-    :term:`uncollectable objects` or :term:`garbage objects` that emerged
+    The GarbageTracker class provides a singleton garbage tracker that can track
+    :term:`uncollectable objects` or :term:`collected objects` that emerged
     during a tracking period.
     """
 
-    #: dict: Global dict of existing garbage trackers, by name.
-    trackers = dict()
+    # The singleton GarbageTracker object
+    _tracker = None
 
-    def __init__(self, name):
-        """
-        Parameters:
-
-            name (:term:`string`): Name of the garbage tracker.
-        """
-        self._name = name
-        self._ignored = False
-        self._ignored_garbage_type_names = []
+    def __init__(self):
         self._enabled = False
-        self._garbage = []
-        self._uncollectable_count = 0
-        self._start_garbage_index = 0
-        self._start_uncollectable_count = 0
+        self._check_collected = False
+        self._ignored = False
+        self._ignored_type_names = []
         self._saved_thresholds = None
+        self._garbage_index = 0
+        self._garbage = []
 
     @staticmethod
-    def get_tracker(name):
+    def get_tracker():
         """
-        Return the garbage tracker with the specified name.
+        Returns the singleton garbage tracker object.
 
-        If a garbage tracker does not yet exist with that name, create one.
-
-        If a garbage tracker already exists with that name, return that garbage
-        tracker object. Subsequent calls to this function for the same name
-        will return the same garbage tracker object.
-
-        Parameters:
-
-            name (:term:`string`): Name of the garbage tracker.
-
-        Returns:
-
-            GarbageTracker: The garbage tracker with the specified name.
+        The object is created when accessed through this method for the first
+        time.
         """
-        if name not in GarbageTracker.trackers:
-            GarbageTracker.trackers[name] = GarbageTracker(name)
-        return GarbageTracker.trackers[name]
-
-    @property
-    def name(self):
-        """
-        :term:`string`: Name of this garbage tracker.
-        """
-        return self._name
-
-    @property
-    def garbage(self):
-        """
-        list: List of new :term:`garbage objects` that emerged during the last
-        tracking period.
-
-        These objects cause increased memory usage because their deletion
-        happens at a later point in time, but they do not necessarily cause
-        memory leaks (although the list includes the
-        :term:`uncollectable objects`).
-
-        See also the :attr:`~yagot.GarbageTracker.uncollectable_count` property
-        for the number of :term:`uncollectable objects`.
-        """
-        return self._garbage
-
-    @property
-    def uncollectable_count(self):
-        """
-        int: Number of new :term:`uncollectable objects` that emerged during the
-        last tracking period.
-
-        These objects cause memory leaks.
-
-        See also the :attr:`~yagot.GarbageTracker.garbage` property for the
-        :term:`garbage objects`.
-        """
-        return self._uncollectable_count
+        if GarbageTracker._tracker is None:
+            GarbageTracker._tracker = GarbageTracker()
+        return GarbageTracker._tracker
 
     @property
     def enabled(self):
@@ -118,14 +64,37 @@ class GarbageTracker(object):
     def ignored(self):
         """
         bool: Boolean indicating whether the current tracking period should be
-        ignored. This flag is set via :meth:`~yagot.GarbageTracker.ignore`.
+        ignored.
+
+        This flag is set via :meth:`~yagot.GarbageTracker.ignore`.
         """
         return self._ignored
 
     @property
-    def ignored_garbage_type_names(self):
+    def check_collected(self):
         """
-        Return the Python type names to be ignored as garbage objects.
+        bool: Boolean indicating whether the tracker checks for
+          :term:`collected objects` (in addition to
+          :term:`uncollectable objects` that are always checked for).
+
+        This flag is set via :meth:`~yagot.GarbageTracker.enable`.
+        """
+        return self._check_collected
+
+    @property
+    def garbage(self):
+        """
+        list: List of new :term:`collected objects` or
+        :term:`uncollectable objects` that emerged during the last tracking
+        period.
+        """
+        return self._garbage
+
+    @property
+    def ignored_type_names(self):
+        """
+        Return the Python type names to be ignored as :term:`collected objects`
+        or :term:`uncollectable objects`.
 
         The types :class:`py:frame` and :class:`py:code` that are always
         ignored are included in the returned list.
@@ -136,18 +105,26 @@ class GarbageTracker(object):
               the ``str(type)`` function (for example "int" or
               "mymodule.MyClass").
         """
-        return self._ignored_garbage_type_names
+        return self._ignored_type_names
 
-    def enable(self, enabled=True):
+    def enable(self, check_collected=False):
         """
-        Enable or disable the garbage tracker.
+        Enable the garbage tracker and control what objects it checks for.
 
         Parameters:
 
-            enabled (bool): Boolean enabling the garbage tracking if `True`,
-              and disabling the garbage tracking if `False`.
+            check_collected (bool): Boolean enabling the checks for
+              :term:`collected objects` (in addition to
+              :term:`uncollectable objects` that are always checked for).
         """
-        self._enabled = enabled
+        self._enabled = True
+        self._check_collected = check_collected
+
+    def disable(self):
+        """
+        Disable the garbage tracker.
+        """
+        self._enabled = False
 
     def ignore(self):
         """
@@ -157,20 +134,21 @@ class GarbageTracker(object):
         if self.enabled:
             self._ignored = True
 
-    def ignore_garbage_types(self, type_list):
+    def ignore_types(self, type_list):
         """
-        Set additional Python types to be ignored as garbage objects.
+        Set additional Python types to be ignored as :term:`collected objects`
+        or :term:`uncollectable objects`.
 
         The specified types are in addition to the following list of types that
-        are aways ignored because they often appear as garbage objects
+        are aways ignored because they often appear as collectable objects
         when catching exceptions (e.g. when using :func:`pytest.raises`):
 
         * :class:`py:frame`
         * :class:`py:code`
 
-        If the list of garbage objects detected during the tracking period
-        contains an object with a type that is to be ignored, the entire
-        tracking period is ignored.
+        If the list of collected or uncollectable objects detected during the
+        tracking period contains an object with a type that is to be ignored,
+        the entire tracking period is ignored.
 
         Parameters:
 
@@ -183,7 +161,7 @@ class GarbageTracker(object):
 
               `None` or an empty iterable means not to set additional types.
         """
-        self._ignored_garbage_type_names = [
+        self._ignored_type_names = [
             _type2name(types.FrameType),
             _type2name(types.CodeType),
         ]
@@ -194,7 +172,7 @@ class GarbageTracker(object):
                 else:
                     assert isinstance(t, six.string_types)
                     type_name = t
-                self._ignored_garbage_type_names.append(type_name)
+                self._ignored_type_names.append(type_name)
 
     def start(self):
         """
@@ -204,13 +182,18 @@ class GarbageTracker(object):
         """
         if self.enabled:
             self._ignored = False
+            self._garbage = []
             self._saved_thresholds = gc.get_threshold()
             gc.set_threshold(0, 0, 0)
             gc.set_debug(0)
             gc.collect()
-            self._start_garbage_index = len(gc.garbage)
-            self._start_uncollectable_count = gc.get_count()[2]
-            gc.set_debug(gc.DEBUG_SAVEALL)
+            if self.check_collected:
+                gc.set_debug(gc.DEBUG_SAVEALL)
+            else:
+                gc.set_debug(gc.DEBUG_UNCOLLECTABLE)
+            # If we delete the gc.garbage items, they will re-appear, so we
+            # remember the last position.
+            self._garbage_index = len(gc.garbage)
 
     def stop(self):
         """
@@ -233,45 +216,44 @@ class GarbageTracker(object):
                 self._garbage = []
             else:
                 ignore = False
-                for i in range(self._start_garbage_index, len(gc.garbage)):
+                for i in range(self._garbage_index, len(gc.garbage)):
                     # There are cases with weakly referenced objects where
                     # isinstance(item, ...) fails with ReferenceError.
                     # Therefore, we use direct type comparison. Also, we
                     # don't want to match object of subclasses anyway.
                     type_name = _type2name(type(gc.garbage[i]))
-                    if type_name in self.ignored_garbage_type_names:
+                    if type_name in self.ignored_type_names:
                         ignore = True
                         break
                 if ignore:
                     self._garbage = []
                 else:
-                    self._garbage = gc.garbage[self._start_garbage_index:]
-            self._uncollectable_count = gc.get_count()[2] - \
-                self._start_uncollectable_count
+                    self._garbage = gc.garbage[self._garbage_index:]
 
     def assert_message(self, location=None, max=10):
         # pylint: disable=redefined-builtin
         """
         Return a formatted multi-line string for the assertion message for
-        :term:`garbage objects` and the number of :term:`uncollectable objects`
+        the :term:`collected objects` or :term:`uncollectable objects`
         detected during the tracking period.
 
         Parameters:
 
             location (:term:`string`): Location of the function that created
-              the garbage objects, e.g. in the notation "module::function".
+              the objects, e.g. in the notation "module::function".
 
-            max (int): Maximum number of garbage objects to be included in the
+            max (int): Maximum number of objects to be included in the
               returned string.
 
         Returns:
 
             :term:`unicode string`: Formatted multi-line string.
         """
-        ret_str = u"\nThere were {num_u} uncollectable object(s) and {num_g} " \
-            u"garbage object(s) caused by function {loc}:\n". \
-            format(num_u=self.uncollectable_count, num_g=len(self.garbage),
-                   loc=location)
+        kind_str = "collected or uncollectable" if self.check_collected \
+            else "uncollectable"
+        ret_str = u"\nThere were {num} {kind} object(s) caused by function " \
+            u"{loc}:\n". \
+            format(num=len(self.garbage), kind=kind_str, loc=location)
         for i, obj in enumerate(self.garbage):
             # self._generate_objgraph(obj)
             if i >= max:
@@ -287,7 +269,7 @@ class GarbageTracker(object):
 
         Parameters:
 
-            obj (object): The object (usually a garbage object).
+            obj (object): The object.
 
         Returns:
 

@@ -134,6 +134,9 @@ project_name := Yagot
 # Name of this Python package
 package_name := yagot
 
+# Name of the Python module with the pytest plugin
+plugin_package_name := yagot_pytest
+
 # Determine if coverage details report generated
 # The variable can be passed in as either an environment variable or
 # command line variable. When set, generates a set of reports of the
@@ -242,7 +245,7 @@ help:
 	@echo "  builddoc   - Build documentation in: $(doc_build_dir)"
 	@echo "  check      - Run Flake8 on Python sources"
 	@echo "  pylint     - Run PyLint on Python sources"
-	@echo "  test       - Run unit tests"
+	@echo "  test       - Run unit tests and plugin tests"
 	@echo "  all        - Do all of the above"
 	@echo "  install    - Install $(package_name) as standalone and its dependent packages"
 	@echo "  end2end    - Run end2end tests"
@@ -408,7 +411,7 @@ all: develop build builddoc check pylint test
 .PHONY: clobber
 clobber: clean
 	@echo "Makefile: Removing everything for a fresh start"
-	-$(call RM_FUNC,*.done $(dist_files) $(dist_dir)/$(package_name)-$(package_version)*.egg $(package_name)/*cover)
+	-$(call RM_FUNC,*.done $(dist_files) $(dist_dir)/$(package_name)-$(package_version)*.egg $(package_name)/*cover yagot_leaky*.so yagot_leaky*.dll)
 	-$(call RMDIR_FUNC,$(doc_build_dir) .tox $(coverage_html_dir) $(package_name).egg-info)
 	@echo "Makefile: Done removing everything for a fresh start"
 	@echo "Makefile: Target $@ done."
@@ -549,11 +552,18 @@ else
   test_deps = develop
 endif
 
+# Note: Measuring coverage of pytest plugins requires special invocation, see
+#       https://pytest-cov.readthedocs.io/en/latest/plugins.html
 .PHONY: test
 test: $(test_deps)
-	@echo "Makefile: Running unit tests"
-	py.test --color=yes --cov $(package_name) $(coverage_report) --cov-config .coveragerc $(pytest_warning_opts) $(pytest_opts) tests/unittest -s
-	@echo "Makefile: Done running unit tests"
+	@echo "Makefile: Running unit tests and plugin tests"
+	pytest --color=yes --cov=$(package_name) $(coverage_report) --cov-config=.coveragerc $(pytest_warning_opts) $(pytest_opts) tests/unittest
+ifeq ($(PLATFORM),Windows_native)
+	cmd /c "set COV_CORE_SOURCE=$(plugin_package_name) & set COV_CORE_CONFIG=.coveragerc & set COV_CORE_DATAFILE=.coverage.eager & pytest --color=yes --cov=$(plugin_package_name) --cov-append $(coverage_report) --cov-config=.coveragerc $(pytest_warning_opts) $(pytest_opts) tests/plugintest"
+else
+	COV_CORE_SOURCE=$(plugin_package_name) COV_CORE_CONFIG=.coveragerc COV_CORE_DATAFILE=.coverage.eager pytest --color=yes --cov=$(plugin_package_name) --cov-append $(coverage_report) --cov-config=.coveragerc $(pytest_warning_opts) $(pytest_opts) tests/plugintest
+endif
+	@echo "Makefile: Done running unit tests and plugin tests"
 
 .PHONY: end2end
 end2end: $(test_deps)

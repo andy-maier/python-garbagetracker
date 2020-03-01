@@ -7,17 +7,17 @@ Introduction
 Yagot (Yet Another Garbage Object Tracker) is a tool for Python developers to
 help you finding issues with garbage collection and memory leaks:
 
-* It can determine the set of new *garbage objects* caused by a function or
+* It can determine the set of *collected objects* caused by a function or
   method.
 
-  Garbage objects are objects Python cannot immediately release when they
-  become unreachable (e.g. when their variable goes out of scope). Frequently
-  this is caused by the presence of circular references into which the
-  object to be released is involved. The garbage collector, which is designed
-  to handle circular references, attempts to release garbage objects.
+  Collected objects are objects Python could not immediately release when they
+  became unreachable and that were eventually released by the Python garbage
+  collector. Frequently this is caused by the presence of circular references
+  into which the object to be released is involved. The garbage collector is
+  designed to handle circular references when releasing objects.
 
-* It can determine the number of new *uncollectable objects* caused by a
-  function or method.
+* It can determine the set of *uncollectable objects* caused by a function or
+  method.
 
   Uncollectable objects are objects Python was unable to release during garbage
   collection, even when running a full collection (i.e. on all generations of
@@ -29,21 +29,22 @@ help you finding issues with garbage collection and memory leaks:
 
 See section
 :ref:`Background`
-for more detailed explanations.
+for more detailed explanations about object release in Python.
 
-Yagot is designed to be useable independent of any test framework, but it can
-also be used with test frameworks such as `pytest`_, `nose`_, or `unittest`_.
+Yagot is simple to use and provides two ways of using it:
+
+* It provides a `pytest`_ plugin that detects collected and uncollectable
+  objects caused by the test cases. This detection is enabled by specifying
+  command line options or environment variables and does not require modifying
+  the test cases.
+
+* It provides a Python decorator named
+  :func:`~yagot.leak_check`
+  that detects collected and uncollectable objects caused by the decorated
+  function or method. This allows using Yagot independent of any test framework
+  or with other test frameworks such as `nose`_ or `unittest`_.
 
 Yagot works with a normal (non-debug) build of Python.
-
-Yagot is simple to use: It provides a Python decorator named
-:func:`~yagot.leak_check`
-which validates that the decorated function or method does not create any
-uncollectable objects or garbage objects, and raises an
-:exc:`~py:exceptions.AssertionError`
-otherwise. Simply use the decorator on a function you want to check. It can be
-used on any function or method, but it makes most sense to use it on test
-functions.
 
 .. _pytest: https://docs.pytest.org/
 .. _nose: https://nose.readthedocs.io/
@@ -55,98 +56,147 @@ functions.
 Usage
 -----
 
-Here is an example of how to use Yagot with a pytest testcase:
+Here is an example of how to use Yagot to detect collected objects caused by
+pytest test cases by means of using the command line options provided by the
+pytest plugin of Yagot:
 
-Consider an example test file ``examples/test_selfref_dict.py``:
+.. code-block:: text
 
-.. code-block:: python
-
-    import yagot
-
-    @yagot.leak_check()
+    $ cat examples/test_1.py
     def test_selfref_dict():
         d1 = dict()
         d1['self'] = d1
 
-Running pytest on this example test file reveals the presence of garbage objects
-by raising a test failure:
+    $ pytest examples --yagot --yagot-collected -k test_1.py
+    ===================================== test session starts ======================================
+    platform darwin -- Python 3.7.5, pytest-5.3.5, py-1.8.1, pluggy-0.13.1
+    rootdir: /Users/maiera/PycharmProjects/yagot/python-yagot
+    plugins: cov-2.8.1, yagot-0.1.0.dev1
+    yagot: Checking for uncollectable and collected objects, ignoring types: (none)
+    collected 2 items / 1 deselected / 1 selected
+
+    examples/test_1.py .E                                                                    [100%]
+
+    ============================================ ERRORS ============================================
+    ____________________________ ERROR at teardown of test_selfref_dict ____________________________
+
+    item = <Function test_selfref_dict>
+
+        def pytest_runtest_teardown(item):
+            """
+            py.test hook that is called when tearing down a test item.
+
+            We use this hook to stop tracking and check the track result.
+            """
+            config = item.config
+            enabled = config.getvalue('yagot')
+            check_collected = config.getvalue('yagot_collected')
+            if enabled:
+                import yagot
+                tracker = yagot.GarbageTracker.get_tracker()
+                tracker.stop()
+                location = "{file}::{func}". \
+                    format(file=item.location[0], func=item.name)
+    >           assert not tracker.garbage, tracker.assert_message(location)
+    E           AssertionError:
+    E             There were 1 collected or uncollectable object(s) caused by function examples/test_1.py::test_selfref_dict:
+    E
+    E             1: <class 'dict'> object at 0x104552370:
+    E             {'self': <Recursive reference to dict object at 0x104552370>}
+    E
+    E           assert not [{'self': {'self': {'self': {'self': {'self': {...}}}}}}]
+    E            +  where [{'self': {'self': {'self': {'self': {'self': {...}}}}}}] = <yagot._garbagetracker.GarbageTracker object at 0x104554490>.garbage
+
+    yagot_pytest/plugin.py:150: AssertionError
+    =========================== 1 passed, 1 deselected, 1 error in 0.06s ===========================
+
+Here is an example of how to use Yagot to detect collected objects caused by a
+function by means of using the ``leak_check`` decorator of Yagot on the
+function:
 
 .. code-block:: text
 
-    $ pytest examples -k test_selfref_dict.py
+    $ cat examples/test_2.py
+    import yagot
 
+    @yagot.leak_check(check_collected=True)
+    def test_selfref_dict():
+        d1 = dict()
+        d1['self'] = d1
+
+    $ pytest examples -k test_2.py
     ===================================== test session starts ======================================
-    platform darwin -- Python 2.7.16, pytest-4.6.9, py-1.8.1, pluggy-0.13.1
-    rootdir: /Users/maiera/PycharmProjects/python-yagot
-    plugins: cov-2.8.1
-    collected 1 item
+    platform darwin -- Python 3.7.5, pytest-5.3.5, py-1.8.1, pluggy-0.13.1
+    rootdir: /Users/maiera/PycharmProjects/yagot/python-yagot
+    plugins: cov-2.8.1, yagot-0.1.0.dev1
+    collected 2 items / 1 deselected / 1 selected
 
-    examples/test_selfref_dict.py F                                                          [100%]
+    examples/test_2.py F                                                                     [100%]
 
     =========================================== FAILURES ===========================================
     ______________________________________ test_selfref_dict _______________________________________
 
-    args = (), kwargs = {}, tracker = <yagot._garbagetracker.GarbageTracker object at 0x106d94290>
-    ret = None, location = 'test_selfref_dict::test_selfref_dict', no_leaks = True
-    no_garbage = False
+    args = (), kwargs = {}, tracker = <yagot._garbagetracker.GarbageTracker object at 0x10cb9ec10>
+    ret = None, location = 'test_2::test_selfref_dict'
+    @py_assert1 = [{'self': {'self': {'self': {'self': {'self': {...}}}}}}], @py_assert3 = False
+    @py_format4 = "\n~There were 1 uncollectable and collected object(s) caused by function test_2::test_selfref_dict:\n~\n~1: <class 'd...elf': {'self': {'self': {'self': {...}}}}}}] = <yagot._garbagetracker.GarbageTracker object at 0x10cb9ec10>.garbage\n}"
 
         @functools.wraps(func)
         def wrapper_leak_check(*args, **kwargs):
             "Wrapper function for the leak_check decorator"
-            tracker = GarbageTracker.get_tracker('yagot.leak_check')
-            tracker.enable()
+            tracker = GarbageTracker.get_tracker()
+            tracker.enable(check_collected)
             tracker.start()
-            tracker.ignore_garbage_types(ignore_garbage_types)
+            tracker.ignore_types(ignore_types)
             ret = func(*args, **kwargs)  # The decorated function
             tracker.stop()
             location = "{module}::{function}".format(
                 module=func.__module__, function=func.__name__)
-            no_leaks = not tracker.uncollectable_count
-            no_garbage = ignore_garbage or not tracker.garbage
-    >       assert no_leaks and no_garbage, tracker.assert_message(location)
+    >       assert not tracker.garbage, tracker.assert_message(location)
     E       AssertionError:
-    E       There were 0 uncollectable object(s) and 1 garbage object(s) caused by function test_selfref_dict::test_selfref_dict:
+    E         There were 1 collected or uncollectable object(s) caused by function test_2::test_selfref_dict:
     E
-    E       1: <type 'dict'> object at 0x106d8ae88:
-    E       { 'self': <Recursive reference to dict object at 0x106d8ae88>}
+    E         1: <class 'dict'> object at 0x10cbbcd20:
+    E         {'self': <Recursive reference to dict object at 0x10cbbcd20>}
+    E
+    E       assert not [{'self': {'self': {'self': {'self': {'self': {...}}}}}}]
+    E        +  where [{'self': {'self': {'self': {'self': {'self': {...}}}}}}] = <yagot._garbagetracker.GarbageTracker object at 0x10cb9ec10>.garbage
 
-    yagot/_decorators.py:59: AssertionError
-    =================================== 1 failed in 0.07 seconds ===================================
+    yagot/_decorators.py:67: AssertionError
+    =============================== 1 failed, 1 deselected in 0.07s ================================
 
-The :exc:`~py:exceptions.AssertionError` raised by Yagot shows that there were
-no uncollectable objects caused by the decorated test function, but one garbage
-object. The assertion message provides some details about that object.
-In this case, we can see that the garbage object is a :class:`py:dict` object, and that
-its 'self' item references back to the same :class:`py:dict` object, so there was
-a circular reference that caused the object to become a garbage object.
+In both usages, Yagot reports that there was one collected or uncollectable
+object caused by the test function. The assertion message
+provides some details about that object. In this case, we can see that the
+object is a ``dict`` object, and that its 'self' item references back to the
+same ``dict`` object, so there was a circular reference that caused the object
+to become a collectable object.
 
-That circular reference is simple enough for the Python garbage collector to break
-it up, so this garbage object does not become an uncollectable object.
+That circular reference is simple enough for the Python garbage collector to
+break it up, so this object does not become uncollectable.
 
 The failure location and source code shown by pytest is the wrapper function of
-the :func:`~yagot.leak_check` decorator, since this is where it is detected.
-The decorated function that caused the garbage objects to be created is
-reported by pytest as a failing test function, and is also mentioned in the
-assertion message using a "module::function" notation.
+the ``leak_check`` decorator and the ``pytest_runtest_teardown`` function
+since this is where it is detected. The decorated function or pytest test case
+that caused the objects to be created is reported in the assertion message
+using a "module::function" notation.
 
-Knowing the test function :func:`test_selfref_dict` that caused the object to
-become a garbage object is a good start for identifying the problem code, and in
-our example case it is easy to do because the test function is simple enough.
-If the test function is too complex to identify the culprit, it can be split
-into multiple simpler test functions, or new test functions can be added to
-check out specific types of objects that were used.
+Knowing the test function ``test_selfref_dict()`` that caused the object to
+become a collectable object is a good start for identifying the problem code,
+and in our example case it is easy to do because the test function is simple
+enough. If the test function is too complex to identify the culprit, it can be
+split into multiple simpler test functions, or new test functions can be added
+to check out specific types of objects that were used.
 
-As an exercise, test the standard :class:`py:dict` class and the
-:class:`py:collections.OrderedDict` class by creating empty dictionaries. You
-will find that on Python 2.7, :class:`py:collections.OrderedDict` causes
-garbage objects (in the CPython implementation, see
+As an exercise, test the standard ``dict`` class and the
+``collections.OrderedDict`` class by creating empty dictionaries. You will find
+that on CPython 2.7, ``collections.OrderedDict`` causes collected objects (see
 `issue9825 <https://bugs.python.org/issue9825>`_).
 
-The :func:`~yagot.leak_check` decorator can be combined with any other
-decorators in any order. Note that it always tracks the next inner function,
-so unless you want to track what garbage other decorators create, you want to
-have it directly on the test function, as the innermost decorator, like in the
-following example:
+The ``leak_check`` decorator can be combined with any other decorators in any
+order. Note that it always tracks the next inner function, so unless you want
+to track what garbage other decorators create, you want to have it directly on
+the test function, as the innermost decorator, like in the following example:
 
 .. code-block:: python
 
