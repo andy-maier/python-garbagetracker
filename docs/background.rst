@@ -5,71 +5,78 @@ Background
 ==========
 
 
-.. _`Object release in Python`:
+.. _`Understanding object release in Python`:
 
-Object release in Python
-------------------------
+Understanding object release in Python
+--------------------------------------
 
 This section explains how Python releases objects, the role of the Python
 garbage collector, the role of object references, and how memory leaks can
 exist in Python. It is a rather brief description just enough to understand
 what is relevant to your Python program.
 Unless otherwise stated, the description applies to CPython with its
-generational garbage collector (introduced in CPython 2.0).
+generational cyclic garbage collector (introduced in CPython 2.0).
 
 Python has two mechanisms for releasing objects:
 
-* immediate release based on reference counting - if the reference count of
-  an object drops to 0, it is immediately attempted to be released. This
-  succeeds, if all referenced objects also can be released that way. Circular
-  references prevent this mechanism to succeed. If it does not succeed, release
-  of the object is left to the garbage collector.
+* Immediate release based on reference counting:
 
-* asynchronous release during garbage collection - Python schedules garbage
-  collection based on object allocation and deallocation heuristics. The
-  garbage collector is able to release isolated sets of objects with circular
-  references (that's why it is sometimes called "cyclic garbage collector").
-  As an optimization, the garbage collector has 3 generations (that's why it is
-  sometimes called "generational garbage collector"), and the heuristics are
-  optimized such that younger generations are collected more often than
-  older generations.
+  If the reference count of an object drops to zero (e.g. because its
+  referencing variable goes out of scope), the reference count of all objects
+  it references are decreased by one, and the original object is immediately
+  released.
+
+  If it triggers, this process always succeeds. If the original object is
+  involved in circular references, the process does not trigger in the first
+  place, because the reference count of the original object never drops to zero.
+
+  Those referenced objects whose reference count drops to zero as a result of
+  being decreased will in turn be immediately released.
+
+* Asynchronous release during garbage collection:
+
+  Objects that can possibly be involved in circular references are tracked by
+  the Python garbage collector. Python schedules runs of the garbage collector
+  based on object allocation and deallocation heuristics. The garbage collector
+  is able to release isolated sets of objects with circular references by
+  breaking up these circular references.
+
+  As an optimization, the garbage collector has 3 generations, and the
+  heuristics are optimized such that younger generations are collected more
+  often than older generations.
+
   There are circumstances whereby multiple collection runs are necessary to
   release objects, and where objects can end up as uncollectable, meaning they
   normally stay around until the Python process terminates.
 
 When an object is created, Python decides whether or not the object is tracked
-by the garbage collector. The :func:`py:gc.is_tracked` function returns
+by the garbage collector. Whether an object is tracked or not can change over
+the lifetime of the object. The :func:`py:gc.is_tracked` function returns
 whether a particular object is currently tracked or untracked.
 
 Untracked objects are not listed in any generation of the garbage collector,
-and can only be released using the immediate release based on reference
-counting, which always succeeds.
+so their release can only be done by the reference counting mechanism.
+Python guarantees that objects that are untracked are not involved in circular
+object references so their reference count does have a chance to drop to zero.
 
-Tracked objects are attempted to be released using the immediate release
-based on reference counting, which potentially does not succeed. They are
-also attempted to be released during garbage collector runs on the
-generation they are in.
-
-Whether an object is tracked or not can change over the lifetime of the object,
-and has been optimized in Python. For example, non-empty tuples are initially
-tracked and will become untracked if during the first garbage collection run
-it turns out they have only immutable items. This prevents the check for tuple
-items at creation time, and the garbage collector has to examine the items
-anyway.
+Tracked objects may or may not be involved in circular references. If they are
+not, their release happens via the reference counting mechanism. If they are,
+a garbage collection run (on the generation they are in) can release them.
+During each collection run on a generation, the garbage collector examines the
+objects in that generation to find isolated sets of objects with circular
+references that are unreachable from outside of themselves. The garbage
+collector tries to break up circular references to release such sets of objects.
 
 Objects that become tracked (either at object creation or later) are always put
 into the first generation of the garbage collector. When a garbage collection
-run on a particular generation does not succeed in releasing an object, the
-object is moved into the next (older) generation.
-During each run on a generation, the garbage collector examines the objects
-in that generation to find unreachable sets of objects. If these objects have
-circular references, the garbage collector tries to break them up to release
-the objects.
+run on a particular generation does not succeed in releasing an unreachable
+isolated set of objects, the objects are moved into the next (older) generation.
 
 Objects in the last (oldest) generation that survive a collection run stay in
-the last generation. They are attempted to be released again upon the next run
-of the garbage collector on the last generation, and that may or may not
-succeed. Unreachable objects in the last generation of the garbage collector are
+the last generation. They will be attempted to be released again and again
+during future runs of the garbage collector on the last generation. In most
+cases, that will not succeed, but there are cases where it will. Unreachable
+isolated set of objects in the last generation of the garbage collector are
 called *uncollectable objects* and unless a future run succeeds in releasing
 them, they remain allocated until the Python process terminates.
 
@@ -93,7 +100,7 @@ Among the possible reasons for objects to become uncollectable are:
   objects with circular references to become uncollectable just because they
   have a ``__del__()`` method.
 
-* reference counting bugs in Python modules implemented in native languages
+* Reference counting bugs in Python modules implemented in native languages
   such as C may cause objects to be uncollectable. For example, a Python module
   implemented in C could properly increase an object reference upon creation but
   forget to decrease it upon deletion. That will prevent the reference count
@@ -113,10 +120,10 @@ If you want to understand this in more detail, here are a few good resources:
 - `Object resurrection (Wikipedia) <https://en.wikipedia.org/wiki/Object_resurrection>`_
 
 
-.. _`Why this is important and how to address it`:
+.. _`The issues with uncollectable and garbage objects`:
 
-Why this is important and how to address it
--------------------------------------------
+The issues with uncollectable and garbage objects
+-------------------------------------------------
 
 For short-running Python programs (e.g. command line utilities), it is mostly
 not so important if there are some memory leaks and other resource leaks. On
@@ -132,11 +139,13 @@ programs. Therefore, resource usage in a Python module should be designed with
 the worst case assumption in mind, i.e. that it is used by an infinitely running
 piece of code.
 
-The important aspects around object release are:
+The remainder of this section explains the issues with uncollectable and
+garbage objects caused during object release and how to address them:
 
-* :term:`Uncollectable objects` have issues:
+* Issues with :term:`uncollectable objects`:
 
-  - They usually stay around until the Python process terminates.
+  - They often stay around until the Python process terminates, and thus can be
+    considered memory leaks.
 
   - The garbage collector attempts to release them again and again on every
     collection run of its last generation, causing repeated unnecessary
@@ -144,29 +153,25 @@ The important aspects around object release are:
 
   In Python 3.4 or higher, the reasons for uncollectable objects have diminished
   very much and their presence usually indicates a bug. You should use tools
-  that can detect them and then analyze each case to find out what caused the
-  object to be uncollectable.
+  that can detect uncollectable objects and then analyze each case to find out
+  what caused the object to be uncollectable.
 
-* :term:`Garbage objects` have issues:
+* Issues with :term:`garbage objects`:
 
-  Garbage objects normally can be successfully released by the garbage
-  collector (at least starting with Python 3.4). Most of the time, garbage
-  objects are caused by circular references. Their presence is less severe
-  than the presence of uncollectable objects. Nevertheless, garbage objects
-  have some issues:
+  - Increased processing overhead caused by the collector runs (compared to
+    immediate release based on reference counting).
 
-  - increased processing overhead caused by the collector runs.
-
-  - suspension of all other activity in the Python process when the garbage
+  - Suspension of all other activity in the Python process when the garbage
     collector runs.
 
-  - the amount of memory bound to these objects until the garbage collector
+  - The amount of memory bound to these objects until the garbage collector
     will run for the next time. Automatic runs of the garbage collector are
     triggered by heuristics that are based on the number of objects and not on
-    the amount of memory bound to these objects.
+    the amount of memory bound to these objects, so it is possible to have
+    a small number of garbage objects with large amounts of memory allocated,
+    that are still not triggering a garbage collector run.
 
-  You should use tools that can detect garbage objects. Some suitable measures
-  to address these issues are:
+  Suitable measures to address these issues with garbage objects:
 
   - Redesign to avoid circular references.
 
@@ -182,18 +187,20 @@ The important aspects around object release are:
     after application startup to release the many objects that have been used
     temporarily during configuration and initial startup processing.
 
-* On Python before 3.4, the presence of a ``__del__()`` method on objects that
-  are involved in circular references has issues:
+* Issues with the ``__del__()`` method on objects that are involved in circular
+  references on Python before 3.4:
 
   - The ``__del__()`` methods are not invoked, so the resource cleanup
     designed to be done by them does not happen.
 
   - In addition, the objects become uncollectable.
 
-  The use of
-  `context managers <https://docs.python.org/3/library/stdtypes.html#typecontextmanager>`_
-  is a good alternative to the use of the ``__del__()`` method, particularly
-  on Python before 3.4.
+  Suitable measures to address these issues with the ``__del__()`` method:
+
+  - The use of
+    `context managers <https://docs.python.org/3/library/stdtypes.html#typecontextmanager>`_
+    is a good alternative to the use of the ``__del__()`` method, particularly
+    on Python before 3.4.
 
 
 .. _`Circular reference examples and detection`:
@@ -204,10 +211,13 @@ Circular reference examples and detection
 This section shows some simple examples of circular references.
 
 Let's first look at a simple way to surface circular references. The
-approach is to create an object, make it unreachable, and check whether
-it appears in the garbage collector. If it was involved with circular
-references, it will appear in the garbage collector because the reference
-counting mechanism was not able to release it.
+approach is to create an object, make it unreachable, and check whether a run
+of the garbage collector releases an object. If the object is involved in
+circular references, its reference count will not drop to zero when it becomes
+unreachable, but the garbage collector will be able to break up the circular
+references and release it. If the object is not involved in circular references,
+it will be released when it becomes it unreachable, and the garbage collector
+does not have anything to do with it (even when it was tracked).
 
 This is basically the approach Yagot uses, although in a more automated fashion.
 
@@ -216,24 +226,27 @@ This is basically the approach Yagot uses, although in a more automated fashion.
     $ python
     >>> import gc
     >>> gc.collect()   # Run full garbage collection to have a reference
-    0                  # No garbage objects initially (in this simple case)
-    >>> obj = dict(); obj['self'] = obj
-    >>> obj
-    {'self': {...}}
+    0                  # No garbage objects collected initially (in this simple case)
+    >>> obj = dict()
+    >>> len(gc.get_referrers(obj))
+    1                 # The dict object has one referrer (the 'obj' variable)
+    >>> obj['self'] = obj
+    >>> len(gc.get_referrers(obj))
+    2                 # The dict object now in addition has its 'self' item as a referrer
     >>> gc.collect()
-    0                  # Still no garbage objects
+    0                  # Still no new garbage objects collected
     >>> del obj        # The dict object becomes unreachable ...
     >>> gc.collect()
-    1                  # ... and ended up as a garbage object that could be released
+    1                  # ... and was released by the next garbage collection run
 
 The interesting part happens during the ``del obj`` statement. The ``del obj``
 statement removes the name ``obj`` from its namespace. That causes the reference
-count of the :class:`dict` object to drop by one, in this case to 0. That causes
-Python to try to immediately release the :class:`dict` object. This does not
-succeed because of the circular reference. The call to :func:`py:gc.collect`
-triggers a full garbage collection run on all generations, which successfully
-breaks up the circular reference and releases the object, as reported by its
-return value of 1.
+count of the :class:`dict` object to drop by one. Because of the circular
+reference back from its 'self' item, the reference count is still 1, so it will
+not be released at that point. The call to :func:`py:gc.collect` triggers a full
+garbage collection run on all generations, which successfully breaks up the
+circular reference and releases the object, as reported by its return value
+of 1.
 
 Here are some examples for circular references. You can inspect them using
 the approach described above:
