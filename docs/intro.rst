@@ -39,7 +39,7 @@ Yagot is simple to use and provides two ways of using it:
   the test cases.
 
 * It provides a Python decorator named
-  :func:`~yagot.leak_check`
+  :func:`~yagot.garbage_checked`
   that detects collected and uncollectable objects caused by the decorated
   function or method. This allows using Yagot independent of any test framework
   or with other test frameworks such as `nose`_ or `unittest`_.
@@ -110,7 +110,7 @@ pytest plugin of Yagot:
     =========================== 1 passed, 1 deselected, 1 error in 0.07s ===========================
 
 Here is an example of how to use Yagot to detect collected objects caused by a
-function by means of using the ``leak_check`` decorator of Yagot on the
+function by means of using the ``garbage_checked`` decorator of Yagot on the
 function:
 
 .. code-block:: text
@@ -118,7 +118,7 @@ function:
     $ cat examples/test_2.py
     import yagot
 
-    @yagot.leak_check()
+    @yagot.garbage_checked()
     def test_selfref_dict():
         d1 = dict()
         d1['self'] = d1
@@ -141,8 +141,8 @@ function:
     @py_format4 = "\n~There were 1 collected or uncollectable object(s) caused by function test_2::test_selfref_dict:\n~\n~1: <class 'di...elf': {'self': {'self': {'self': {...}}}}}}] = <yagot._garbagetracker.GarbageTracker object at 0x1078853d0>.garbage\n}"
 
         @functools.wraps(func)
-        def wrapper_leak_check(*args, **kwargs):
-            "Wrapper function for the leak_check decorator"
+        def wrapper_garbage_checked(*args, **kwargs):
+            "Wrapper function for the garbage_checked decorator"
             tracker = GarbageTracker.get_tracker()
             tracker.enable(leaks_only=leaks_only)
             tracker.start()
@@ -175,7 +175,7 @@ That circular reference is simple enough for the Python garbage collector to
 break it up, so this object does not become uncollectable.
 
 The failure location and source code shown by pytest is the wrapper function of
-the ``leak_check`` decorator and the ``pytest_runtest_teardown`` function
+the ``garbage_checked`` decorator and the ``pytest_runtest_teardown`` function
 since this is where it is detected. The decorated function or pytest test case
 that caused the objects to be created is reported in the assertion message
 using a "module::function" notation.
@@ -192,7 +192,7 @@ As an exercise, test the standard ``dict`` class and the
 that on CPython 2.7, ``collections.OrderedDict`` causes collected objects (see
 `issue9825 <https://bugs.python.org/issue9825>`_).
 
-The ``leak_check`` decorator can be combined with any other decorators in any
+The ``garbage_checked`` decorator can be combined with any other decorators in any
 order. Note that it always tracks the next inner function, so unless you want
 to track what garbage other decorators create, you want to have it directly on
 the test function, as the innermost decorator, like in the following example:
@@ -204,7 +204,7 @@ the test function, as the innermost decorator, like in the following example:
 
     @pytest.mark.parametrize('parm2', [ ... ])
     @pytest.mark.parametrize('parm1', [ ... ])
-    @yagot.leak_check()
+    @yagot.garbage_checked()
     def test_something(parm1, parm2):
         pass  # some test code
 

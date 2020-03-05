@@ -6,10 +6,10 @@ from __future__ import absolute_import, print_function
 import functools
 from ._garbagetracker import GarbageTracker
 
-__all__ = ['leak_check']
+__all__ = ['garbage_checked']
 
 
-def leak_check(leaks_only=False, ignore_types=None):
+def garbage_checked(leaks_only=False, ignore_types=None):
     """
     Decorator that checks for :term:`uncollectable objects` and optionally for
     :term:`collected objects` caused by the decorated function or method, and
@@ -25,7 +25,7 @@ def leak_check(leaks_only=False, ignore_types=None):
     Note that this decorator has arguments, so it must be specified with
     parenthesis, even when relying on the default argument values::
 
-        @yagot.leak_check()
+        @yagot.garbage_checked()
         test_something():
             # do some tests
 
@@ -50,12 +50,12 @@ def leak_check(leaks_only=False, ignore_types=None):
           `None` or an empty iterable means not to ignore any types.
     """
 
-    def decorator_leak_check(func):
-        "Decorator function for the leak_check decorator"
+    def decorator_garbage_checked(func):
+        "Decorator function for the garbage_checked decorator"
 
         @functools.wraps(func)
-        def wrapper_leak_check(*args, **kwargs):
-            "Wrapper function for the leak_check decorator"
+        def wrapper_garbage_checked(*args, **kwargs):
+            "Wrapper function for the garbage_checked decorator"
             tracker = GarbageTracker.get_tracker()
             tracker.enable(leaks_only=leaks_only)
             tracker.start()
@@ -67,6 +67,6 @@ def leak_check(leaks_only=False, ignore_types=None):
             assert not tracker.garbage, tracker.assert_message(location)
             return ret
 
-        return wrapper_leak_check
+        return wrapper_garbage_checked
 
-    return decorator_leak_check
+    return decorator_garbage_checked
