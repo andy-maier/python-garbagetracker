@@ -9,7 +9,7 @@ from ._garbagetracker import GarbageTracker
 __all__ = ['leak_check']
 
 
-def leak_check(check_collected=False, ignore_types=None):
+def leak_check(leaks_only=False, ignore_types=None):
     """
     Decorator that checks for :term:`uncollectable objects` and optionally for
     :term:`collected objects` caused by the decorated function or method, and
@@ -31,9 +31,9 @@ def leak_check(check_collected=False, ignore_types=None):
 
     Parameters:
 
-        check_collected (bool): Boolean adding checks for
-          :term:`collected objects` (in addition to
-          :term:`uncollectable objects` that are always checked for).
+        leaks_only (bool): Boolean to limit the checks to only
+          :term:`uncollectable objects`. By default, :term:`collected objects`
+          and :term:`uncollectable objects` are checked for.
 
         ignore_types (:term:`py:iterable`): `None` or iterable of Python
           types or type names that are set as additional garbage types to
@@ -57,9 +57,9 @@ def leak_check(check_collected=False, ignore_types=None):
         def wrapper_leak_check(*args, **kwargs):
             "Wrapper function for the leak_check decorator"
             tracker = GarbageTracker.get_tracker()
-            tracker.enable(check_collected)
+            tracker.enable(leaks_only=leaks_only)
             tracker.start()
-            tracker.ignore_types(ignore_types)
+            tracker.ignore_types(type_list=ignore_types)
             ret = func(*args, **kwargs)  # The decorated function
             tracker.stop()
             location = "{module}::{function}".format(

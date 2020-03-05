@@ -40,18 +40,18 @@ def pytest_addoption(parser):
         action='store_true',
         default=bool(os.getenv('YAGOT', False)),
         help="""\
-Enables checking in general and checks for uncollectable objects.
+Enables checking for collected and uncollectable objects caused by pytest test
+cases.
 Default: Env.var YAGOT (set to non-empty), or False.
 """)
     group.addoption(
-        '--yagot-collected',
-        dest='yagot_collected',
+        '--yagot-leaks-only',
+        dest='yagot_leaks_only',
         action='store_true',
-        default=bool(os.getenv('YAGOT_COLLECTED', False)),
+        default=bool(os.getenv('YAGOT_LEAKS_ONLY', False)),
         help="""\
-Adds checking for collected objects (in addition to uncollectable objects
-which are always checked).
-Default: Env.var YAGOT_COLLECTED (set to non-empty), or False.
+Limits the checking to only uncollectable (=leak) objects.
+Default: Env.var YAGOT_LEAKS_ONLY (set to non-empty), or False.
 """)
     group.addoption(
         '--yagot-ignore-types',
@@ -83,11 +83,11 @@ def pytest_sessionstart(session):
     yield  # causes the session start hooks to be called
     config = session.config
     enabled = config.getvalue('yagot')
-    check_collected = config.getvalue('yagot_collected')
+    leaks_only = config.getvalue('yagot_leaks_only')
     ignore_types = pure_list(config.getvalue('yagot_ignore_types'))
     if enabled:
-        kind_str = "collected and uncollectable" if check_collected \
-            else "uncollectable"
+        kind_str = "uncollectable" if leaks_only \
+            else "collected and uncollectable"
         ignore_str = ', '.join(ignore_types) or "(none)"
         print("yagot: Checking for {} objects, ignoring types: {}".
               format(kind_str, ignore_str))
@@ -101,14 +101,14 @@ def pytest_runtest_setup(item):
     """
     config = item.config
     enabled = config.getvalue('yagot')
-    check_collected = config.getvalue('yagot_collected')
+    leaks_only = config.getvalue('yagot_leaks_only')
     ignore_types = pure_list(config.getvalue('yagot_ignore_types'))
     if enabled:
         import yagot
         tracker = yagot.GarbageTracker.get_tracker()
-        tracker.enable(check_collected)
+        tracker.enable(leaks_only=leaks_only)
         tracker.start()
-        tracker.ignore_types(ignore_types)
+        tracker.ignore_types(type_list=ignore_types)
 
 
 @pytest.hookimpl(trylast=True, hookwrapper=True)
@@ -124,7 +124,6 @@ def pytest_runtest_makereport(item, call):
     report = (yield).get_result()  # pytest.TestReport
     config = item.config
     enabled = config.getvalue('yagot')
-    check_collected = config.getvalue('yagot_collected')
     if enabled:
         if report.when == "call" and not report.passed:
             import yagot
@@ -140,7 +139,6 @@ def pytest_runtest_teardown(item):
     """
     config = item.config
     enabled = config.getvalue('yagot')
-    check_collected = config.getvalue('yagot_collected')
     if enabled:
         import yagot
         tracker = yagot.GarbageTracker.get_tracker()

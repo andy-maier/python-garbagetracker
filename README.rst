@@ -105,12 +105,12 @@ pytest plugin of Yagot:
         d1 = dict()
         d1['self'] = d1
 
-    $ pytest examples --yagot --yagot-collected -k test_1.py
+    $ pytest examples --yagot -k test_1.py
     ===================================== test session starts ======================================
     platform darwin -- Python 3.7.5, pytest-5.3.5, py-1.8.1, pluggy-0.13.1
     rootdir: /Users/maiera/PycharmProjects/yagot/python-yagot
     plugins: cov-2.8.1, yagot-0.1.0.dev1
-    yagot: Checking for uncollectable and collected objects, ignoring types: (none)
+    yagot: Checking for collected and uncollectable objects, ignoring types: (none)
     collected 2 items / 1 deselected / 1 selected
 
     examples/test_1.py .E                                                                    [100%]
@@ -128,7 +128,6 @@ pytest plugin of Yagot:
             """
             config = item.config
             enabled = config.getvalue('yagot')
-            check_collected = config.getvalue('yagot_collected')
             if enabled:
                 import yagot
                 tracker = yagot.GarbageTracker.get_tracker()
@@ -139,14 +138,14 @@ pytest plugin of Yagot:
     E           AssertionError:
     E             There were 1 collected or uncollectable object(s) caused by function examples/test_1.py::test_selfref_dict:
     E
-    E             1: <class 'dict'> object at 0x104552370:
-    E             {'self': <Recursive reference to dict object at 0x104552370>}
+    E             1: <class 'dict'> object at 0x10df6ceb0:
+    E             {'self': <Recursive reference to dict object at 0x10df6ceb0>}
     E
     E           assert not [{'self': {'self': {'self': {'self': {'self': {...}}}}}}]
-    E            +  where [{'self': {'self': {'self': {'self': {'self': {...}}}}}}] = <yagot._garbagetracker.GarbageTracker object at 0x104554490>.garbage
+    E            +  where [{'self': {'self': {'self': {'self': {'self': {...}}}}}}] = <yagot._garbagetracker.GarbageTracker object at 0x10df15f10>.garbage
 
-    yagot_pytest/plugin.py:150: AssertionError
-    =========================== 1 passed, 1 deselected, 1 error in 0.06s ===========================
+    yagot_pytest/plugin.py:148: AssertionError
+    =========================== 1 passed, 1 deselected, 1 error in 0.07s ===========================
 
 Here is an example of how to use Yagot to detect collected objects caused by a
 function by means of using the ``leak_check`` decorator of Yagot on the
@@ -157,7 +156,7 @@ function:
     $ cat examples/test_2.py
     import yagot
 
-    @yagot.leak_check(check_collected=True)
+    @yagot.leak_check()
     def test_selfref_dict():
         d1 = dict()
         d1['self'] = d1
@@ -174,18 +173,18 @@ function:
     =========================================== FAILURES ===========================================
     ______________________________________ test_selfref_dict _______________________________________
 
-    args = (), kwargs = {}, tracker = <yagot._garbagetracker.GarbageTracker object at 0x10cb9ec10>
+    args = (), kwargs = {}, tracker = <yagot._garbagetracker.GarbageTracker object at 0x1078853d0>
     ret = None, location = 'test_2::test_selfref_dict'
     @py_assert1 = [{'self': {'self': {'self': {'self': {'self': {...}}}}}}], @py_assert3 = False
-    @py_format4 = "\n~There were 1 uncollectable and collected object(s) caused by function test_2::test_selfref_dict:\n~\n~1: <class 'd...elf': {'self': {'self': {'self': {...}}}}}}] = <yagot._garbagetracker.GarbageTracker object at 0x10cb9ec10>.garbage\n}"
+    @py_format4 = "\n~There were 1 collected or uncollectable object(s) caused by function test_2::test_selfref_dict:\n~\n~1: <class 'di...elf': {'self': {'self': {'self': {...}}}}}}] = <yagot._garbagetracker.GarbageTracker object at 0x1078853d0>.garbage\n}"
 
         @functools.wraps(func)
         def wrapper_leak_check(*args, **kwargs):
             "Wrapper function for the leak_check decorator"
             tracker = GarbageTracker.get_tracker()
-            tracker.enable(check_collected)
+            tracker.enable(leaks_only=leaks_only)
             tracker.start()
-            tracker.ignore_types(ignore_types)
+            tracker.ignore_types(type_list=ignore_types)
             ret = func(*args, **kwargs)  # The decorated function
             tracker.stop()
             location = "{module}::{function}".format(
@@ -194,11 +193,11 @@ function:
     E       AssertionError:
     E         There were 1 collected or uncollectable object(s) caused by function test_2::test_selfref_dict:
     E
-    E         1: <class 'dict'> object at 0x10cbbcd20:
-    E         {'self': <Recursive reference to dict object at 0x10cbbcd20>}
+    E         1: <class 'dict'> object at 0x1078843c0:
+    E         {'self': <Recursive reference to dict object at 0x1078843c0>}
     E
     E       assert not [{'self': {'self': {'self': {'self': {'self': {...}}}}}}]
-    E        +  where [{'self': {'self': {'self': {'self': {'self': {...}}}}}}] = <yagot._garbagetracker.GarbageTracker object at 0x10cb9ec10>.garbage
+    E        +  where [{'self': {'self': {'self': {'self': {'self': {...}}}}}}] = <yagot._garbagetracker.GarbageTracker object at 0x1078853d0>.garbage
 
     yagot/_decorators.py:67: AssertionError
     =============================== 1 failed, 1 deselected in 0.07s ================================

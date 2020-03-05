@@ -18,7 +18,7 @@ def test_help_message(testdir):
     result.stdout.fnmatch_lines([
         '*Yagot:',
         '* --yagot*',
-        '* --yagot-collected*',
+        '* --yagot-leaks-only*',
         '* --yagot-ignore-types=*',
     ])
     assert result.ret == 0
@@ -47,7 +47,7 @@ def test_collected_clean(testdir):
         _ = dict()
     """
     testdir.makepyfile(test_code)
-    result = testdir.runpytest('--yagot', '--yagot-collected')
+    result = testdir.runpytest('--yagot')
     assert result.ret == 0
 
 
@@ -61,7 +61,7 @@ def test_uncollectable_clean(testdir):
         _ = dict()
     """
     testdir.makepyfile(test_code)
-    result = testdir.runpytest('--yagot')
+    result = testdir.runpytest('--yagot', '--yagot-leaks-only')
     assert result.ret == 0
 
 
@@ -76,7 +76,7 @@ def test_collected_selfref(testdir):
         d1['self'] = d1
     """
     testdir.makepyfile(test_code)
-    result = testdir.runpytest('--yagot', '--yagot-collected')
+    result = testdir.runpytest('--yagot')
     result.stdout.fnmatch_lines([
         '*There were 1 collected or uncollectable object(s) '
         'caused by function test_collected_selfref.py::test_clean*',
@@ -95,9 +95,7 @@ def test_collected_selfref_ignored(testdir):
         d1['self'] = d1
     """
     testdir.makepyfile(test_code)
-    result = testdir.runpytest(
-        '--yagot', '--yagot-collected',
-        '--yagot-ignore-types=dict,list')
+    result = testdir.runpytest('--yagot', '--yagot-ignore-types=dict,list')
     assert result.ret == 0
 
 
@@ -113,7 +111,7 @@ def test_collected_selfref_failed(testdir):
         assert False
     """
     testdir.makepyfile(test_code)
-    result = testdir.runpytest('--yagot', '--yagot-collected')
+    result = testdir.runpytest('--yagot')
     result.stdout.fnmatch_lines([
         '*test_collected_selfref_failed.py:4: AssertionError*',
     ])
@@ -140,7 +138,7 @@ def test_uncollectable_incref(testdir):
         assert sys.getrefcount(l1) == 3
     """
     testdir.makepyfile(test_code)
-    result = testdir.runpytest('--yagot')
+    result = testdir.runpytest('--yagot', '--yagot-leaks-only')
     result.stdout.fnmatch_lines([
         '*There were 1 uncollectable object(s) '
         'caused by function test_leak.py::test_leak*',

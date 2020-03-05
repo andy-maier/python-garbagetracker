@@ -31,7 +31,7 @@ def test_leaks_empty():
 
 
 @pytest.mark.xfail(raises=AssertionError, strict=True)
-@leak_check(check_collected=True)
+@leak_check()
 def test_leaks_selfref_1():
     """
     Test function with SelfRef collectable object when checking for
@@ -40,17 +40,17 @@ def test_leaks_selfref_1():
     _ = SelfRef()
 
 
-@leak_check(check_collected=False)
+@leak_check(leaks_only=True)
 def test_leaks_selfref_2():
     """
     Test function with SelfRef collectable object when checking for
-    uncollectable objects. Because it does not check for collectable
+    uncollectable objects only. Because it does not check for collectable
     objects, the check succeeds.
     """
     _ = SelfRef()
 
 
-@leak_check(check_collected=True, ignore_types=[SelfRef])
+@leak_check(ignore_types=[SelfRef])
 def test_leaks_selfref_3():
     """
     Test function with SelfRef collectable object when checking for
