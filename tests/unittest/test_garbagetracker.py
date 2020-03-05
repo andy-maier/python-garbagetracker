@@ -31,7 +31,7 @@ def test_GarbageTracker_init():
 
     assert obj.enabled is False
     assert obj.ignored is False
-    assert obj.check_collected is False
+    assert obj.leaks_only is False
     assert obj.ignored_type_names == []
     assert obj.garbage == []
 
@@ -39,14 +39,14 @@ def test_GarbageTracker_init():
 @pytest.mark.parametrize(
     "kwargs", [
         dict(),
-        dict(check_collected=False),
-        dict(check_collected=True),
+        dict(leaks_only=False),
+        dict(leaks_only=True),
     ])
 def test_GarbageTracker_enable(kwargs):
     """
     Test function for GarbageTracker.enable().
     """
-    exp_check_collected = kwargs.get('check_collected', False)
+    exp_leaks_only = kwargs.get('leaks_only', False)
     obj = GarbageTracker()
     assert obj.enabled is False
 
@@ -54,7 +54,7 @@ def test_GarbageTracker_enable(kwargs):
     obj.enable(**kwargs)
 
     assert obj.enabled is True
-    assert obj.check_collected == exp_check_collected
+    assert obj.leaks_only == exp_leaks_only
 
     # Check that otherwise nothing happened
     assert obj.ignored is False
@@ -246,11 +246,11 @@ TESTCASES_GARBAGETRACKER_TRACK = [
 @pytest.mark.parametrize(
     "enable", [True, False])
 @pytest.mark.parametrize(
-    "check_collected", [True, False])
+    "leaks_only", [True, False])
 @pytest.mark.parametrize(
     "desc, details",
     TESTCASES_GARBAGETRACKER_TRACK)
-def test_GarbageTracker_track(desc, details, check_collected, enable, ignore):
+def test_GarbageTracker_track(desc, details, leaks_only, enable, ignore):
     # pylint: disable=unused-argument
     """
     Test function for tracking garbage using
@@ -269,7 +269,7 @@ def test_GarbageTracker_track(desc, details, check_collected, enable, ignore):
     obj = GarbageTracker()
 
     if enable:
-        obj.enable(check_collected)
+        obj.enable(leaks_only)
 
     obj.start()
 
@@ -294,10 +294,10 @@ def test_GarbageTracker_track(desc, details, check_collected, enable, ignore):
     else:
         # If the tracker was enabled and not ignored, we will see garbage
         # reported (if there is expected garbage).
-        if check_collected:
-            exp_garbage_types = exp_collected_types
-        else:
+        if leaks_only:
             exp_garbage_types = exp_uncollectable_types
+        else:
+            exp_garbage_types = exp_collected_types
         if isinstance(exp_garbage_types, int):
             # We just check the number of objects
             assert len(obj.garbage) == exp_garbage_types

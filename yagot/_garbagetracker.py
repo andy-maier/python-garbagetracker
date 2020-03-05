@@ -25,8 +25,8 @@ PPRINT_RECURSION_PATTERN = re.compile(r"<Recursion on (.*) with id=([0-9]+)>")
 class GarbageTracker(object):
     """
     The GarbageTracker class provides a singleton garbage tracker that can track
-    :term:`uncollectable objects` or :term:`collected objects` that emerged
-    during a tracking period.
+    :term:`uncollectable objects` and optionally :term:`collected objects`
+    that emerged during a tracking period.
     """
 
     # The singleton GarbageTracker object
@@ -34,7 +34,7 @@ class GarbageTracker(object):
 
     def __init__(self):
         self._enabled = False
-        self._check_collected = False
+        self._leaks_only = False
         self._ignored = False
         self._ignored_type_names = []
         self._saved_thresholds = None
@@ -71,15 +71,14 @@ class GarbageTracker(object):
         return self._ignored
 
     @property
-    def check_collected(self):
+    def leaks_only(self):
         """
-        bool: Boolean indicating whether the tracker checks for
-          :term:`collected objects` (in addition to
-          :term:`uncollectable objects` that are always checked for).
+        bool: Boolean indicating whether the tracker limits the checks to
+        :term:`uncollectable objects` (= leaks) only.
 
-        This flag is set via :meth:`~yagot.GarbageTracker.enable`.
+        This flag can be set via :meth:`~yagot.GarbageTracker.enable`.
         """
-        return self._check_collected
+        return self._leaks_only
 
     @property
     def garbage(self):
@@ -107,18 +106,17 @@ class GarbageTracker(object):
         """
         return self._ignored_type_names
 
-    def enable(self, check_collected=False):
+    def enable(self, leaks_only=False):
         """
         Enable the garbage tracker and control what objects it checks for.
 
         Parameters:
 
-            check_collected (bool): Boolean enabling the checks for
-              :term:`collected objects` (in addition to
-              :term:`uncollectable objects` that are always checked for).
+            leaks_only (bool): Boolean limiting the checks to
+              :term:`uncollectable objects` (=leaks) only.
         """
         self._enabled = True
-        self._check_collected = check_collected
+        self._leaks_only = leaks_only
 
     def disable(self):
         """
@@ -187,10 +185,8 @@ class GarbageTracker(object):
             gc.set_threshold(0, 0, 0)
             gc.set_debug(0)
             gc.collect()
-            if self.check_collected:
+            if not self.leaks_only:
                 gc.set_debug(gc.DEBUG_SAVEALL)
-            else:
-                gc.set_debug(gc.DEBUG_UNCOLLECTABLE)
             # If we delete the gc.garbage items, they will re-appear, so we
             # remember the last position.
             self._garbage_index = len(gc.garbage)
@@ -249,8 +245,8 @@ class GarbageTracker(object):
 
             :term:`unicode string`: Formatted multi-line string.
         """
-        kind_str = "collected or uncollectable" if self.check_collected \
-            else "uncollectable"
+        kind_str = "uncollectable" if self.leaks_only \
+            else "collected or uncollectable"
         ret_str = u"\nThere were {num} {kind} object(s) caused by function " \
             u"{loc}:\n". \
             format(num=len(self.garbage), kind=kind_str, loc=location)

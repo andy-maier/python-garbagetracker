@@ -13,19 +13,16 @@ It adds the following group of command line options to pytest:
 
     Garbage object tracking using Yagot:
 
-    --yagot               Enables checking in general and checks for uncollectable
-                          objects. Default: Env.var YAGOT (set to non-empty), or
-                          False.
+    --yagot               Enables checking for collected and uncollectable objects caused by
+                          pytest test cases. Default: Env.var YAGOT (set to non-empty), or False.
 
-    --yagot-collected     Adds checking for collected objects (in addition to
-                          uncollectable objects which are always checked).
-                          Default: Env.var YAGOT_COLLECTED (set to non-empty), or
-                          False.
+    --yagot-leaks-only    Limits the checking to only uncollectable (=leak) objects. Default:
+                          Env.var YAGOT_LEAKS_ONLY (set to non-empty), or False.
 
     --yagot-ignore-types=TYPE[,TYPE[...]]
-                          Type name or module.path.class name of collected and
-                          uncollectable objects for which test cases will be
-                          ignored. Multiple comma-separated type names can be
-                          specified on each option, and in addition the option can
-                          be specified multiple times. Default: Env.var
-                          YAGOT_IGNORE_TYPES, or empty list.
+                          Type name or module.path.class name of collected and uncollectable
+                          objects for which test cases will be ignored. Multiple comma-separated
+                          type names can be specified on each option, and in addition the option
+                          can be specified multiple times. The types must be specified as
+                          represented by the str(type) function (for example, "int" or
+                          "mymodule.MyClass"). Default: Env.var YAGOT_IGNORE_TYPES, or empty list.
