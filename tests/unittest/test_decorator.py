@@ -1,11 +1,11 @@
 """
-Test the leak_check decorator.
+Test the garbage_checked decorator.
 """
 
 from __future__ import absolute_import, print_function
 
 import pytest
-from yagot import leak_check
+from yagot import garbage_checked
 
 
 class SelfRef(object):
@@ -22,7 +22,7 @@ class SelfRef(object):
         self.ref = self
 
 
-@leak_check()
+@garbage_checked()
 def test_leaks_empty():
     """
     Empty test function.
@@ -31,7 +31,7 @@ def test_leaks_empty():
 
 
 @pytest.mark.xfail(raises=AssertionError, strict=True)
-@leak_check()
+@garbage_checked()
 def test_leaks_selfref_1():
     """
     Test function with SelfRef collectable object when checking for
@@ -40,7 +40,7 @@ def test_leaks_selfref_1():
     _ = SelfRef()
 
 
-@leak_check(leaks_only=True)
+@garbage_checked(leaks_only=True)
 def test_leaks_selfref_2():
     """
     Test function with SelfRef collectable object when checking for
@@ -50,7 +50,7 @@ def test_leaks_selfref_2():
     _ = SelfRef()
 
 
-@leak_check(ignore_types=[SelfRef])
+@garbage_checked(ignore_types=[SelfRef])
 def test_leaks_selfref_3():
     """
     Test function with SelfRef collectable object when checking for
