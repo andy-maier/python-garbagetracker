@@ -21,6 +21,9 @@ Released: not yet
 * Removed support for Pypy in Travis, because required GC functionality
   is not supported in Pypy.
 
+* Changed versions of colorama package (used only in development, by pytest)
+  to fix issue on Python 3.4 on Appveyor.
+
 **Enhancements:**
 
 **Cleanup:**
