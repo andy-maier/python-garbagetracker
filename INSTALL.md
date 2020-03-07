@@ -9,4 +9,4 @@ Yagot project into your active Python environment:
 This will also install any prerequisite Python packages.
 
 For more details and alternative ways to install, see
-[Installation](https://yagot.readthedocs.io/en/stable/intro.html#installation).
+[Installation](https://yagot.readthedocs.io/en/latest/intro.html#installation).
