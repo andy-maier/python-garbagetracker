@@ -6,22 +6,9 @@ Change log
 
 
 yagot 0.1.0
--------------------------------------
+-----------
 
-Released: not yet
+Released: 2020-03-07
 
-**Incompatible changes:**
+Initial version releaed to Pypi.
 
-**Deprecations:**
-
-**Bug fixes:**
-
-**Enhancements:**
-
-**Cleanup:**
-
-**Known issues:**
-
-* See `list of open issues`_.
-
-.. _`list of open issues`: https://github.com/andy-maier/python-yagot/issues
