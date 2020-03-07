@@ -24,6 +24,9 @@ Released: not yet
 * Changed versions of colorama package (used only in development, by pytest)
   to fix issue on Python 3.4 on Appveyor.
 
+* Changed versions of typed-ast package (used only in development, by pylint
+  on Python 3) to fix issue on Python 3.4 on Appveyor.
+
 **Enhancements:**
 
 **Cleanup:**
