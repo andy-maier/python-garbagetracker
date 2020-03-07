@@ -26,12 +26,12 @@ Python has two mechanisms for releasing objects:
   it references are decreased by one, and the original object is immediately
   released.
 
+  Those referenced objects whose reference count drops to zero as a result of
+  being decreased will in turn be immediately released.
+
   If it triggers, this process always succeeds. If the original object is
   involved in circular references, the process does not trigger in the first
   place, because the reference count of the original object never drops to zero.
-
-  Those referenced objects whose reference count drops to zero as a result of
-  being decreased will in turn be immediately released.
 
 * Asynchronous release during garbage collection:
 
@@ -128,10 +128,9 @@ The issues with collected and uncollectable objects
 For short-running Python programs (e.g. command line utilities), it is mostly
 not so important if there are some memory leaks and other resource leaks. On
 most operating systems, resource cleanup at process termination is very thorough
-and resources such as open files are cleaned up properly. I'm not advocating to
-be careless there, in fact I would always recommend to also keep short-running
-Python programs clean, but the negative effect is less severe compared to
-long-running programs.
+and resources such as open files are cleaned up properly. This should not be
+understood as advocating to be careless there, but the negative effect is less
+severe on short-running programs compared to long-running programs.
 
 If your Python package provides modules for use by other code, you usually
 cannot predict whether it will be used in short-running or long-running

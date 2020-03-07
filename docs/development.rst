@@ -39,8 +39,7 @@ Setting up the development environment
    Have the virtual Python environment active for all remaining steps.
 
 3. Install the project for development.
-   This will install Python packages into the active Python environment,
-   and OS-level packages:
+   This will install Python packages into the active Python environment:
 
    .. code-block:: bash
 

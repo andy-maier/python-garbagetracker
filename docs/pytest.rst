@@ -1,13 +1,11 @@
 
-.. _`Pytest plugin`:
+.. _`Yagot pytest plugin`:
 
-Pytest plugin
-=============
+Yagot pytest plugin
+===================
 
-This section describes the pytest plugin of Yagot.
-
-The pytest plugin is automatically installed along with the yagot package.
-It adds the following group of command line options to pytest:
+The ``yagot`` pytest plugin is automatically installed along with the yagot
+package. It adds the following group of command line options to pytest:
 
 .. code-block:: text
 
