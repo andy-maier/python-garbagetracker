@@ -102,41 +102,19 @@ The `tests` directory has the following subdirectory structure:
 ::
 
     tests
+     +-- plugintest          Plugin tests
      +-- unittest            Unit tests
-     +-- end2endtest         End2end tests
-     +-- manualtest          Manual tests
 
-There are multiple types of tests:
+The unit tests and plugin tests are run by executing:
 
-1. Unit tests
+.. code-block:: bash
 
-   These tests can be run standalone, and the tests validate their results
-   automatically.
+    $ make test
 
-   They are run by executing:
+Test execution can be modified by a number of environment variables, as
+documented in the make help (execute `make help`).
 
-   .. code-block:: bash
-
-       $ make test
-
-   Test execution can be modified by a number of environment variables, as
-   documented in the make help (execute `make help`).
-
-2. End2end tests
-
-   These tests are run ... (describe) ..., and the tests validate
-   their results automatically.
-
-   They are run by executing:
-
-   .. code-block:: bash
-
-       $ make end2end
-
-   Again, test execution can be modified by a number of environment variables,
-   as documented in the make help (execute `make help`).
-
-To run the unit and function tests in all supported Python environments, the
+To run the unit and plugin tests in all supported Python environments, the
 Tox tool can be used. It creates the necessary virtual Python environments and
 executes `make test` (i.e. the unit and function tests) in each of them.
 

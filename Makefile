@@ -215,14 +215,11 @@ ifdef TESTCASES
 else
   pytest_opts := $(TESTOPTS)
 endif
-pytest_end2end_opts := -v --tb=short $(pytest_opts)
 
 ifeq ($(python_m_version),3)
   pytest_warning_opts := -W default -W ignore::PendingDeprecationWarning -W ignore::ResourceWarning
-  pytest_end2end_warning_opts := $(pytest_warning_opts)
 else
   pytest_warning_opts := -W default -W ignore::PendingDeprecationWarning
-  pytest_end2end_warning_opts := $(pytest_warning_opts)
 endif
 
 # Files to be put into distribution archive.
@@ -248,7 +245,6 @@ help:
 	@echo "  test       - Run unit tests and plugin tests"
 	@echo "  all        - Do all of the above"
 	@echo "  install    - Install $(package_name) as standalone and its dependent packages"
-	@echo "  end2end    - Run end2end tests"
 	@echo "  upload     - build + upload the distribution archive files to PyPI"
 	@echo "  clean      - Remove any temporary files"
 	@echo "  clobber    - Remove everything created to ensure clean start"
@@ -564,9 +560,3 @@ else
 	COV_CORE_SOURCE=$(plugin_package_name) COV_CORE_CONFIG=.coveragerc COV_CORE_DATAFILE=.coverage.eager pytest --color=yes --cov=$(plugin_package_name) --cov-append $(coverage_report) --cov-config=.coveragerc $(pytest_warning_opts) $(pytest_opts) tests/plugintest
 endif
 	@echo "Makefile: Done running unit tests and plugin tests"
-
-.PHONY: end2end
-end2end: $(test_deps)
-	@echo "Makefile: Running end2end tests"
-	py.test --color=yes $(pytest_end2end_warning_opts) $(pytest_end2end_opts) tests/end2endtest -s
-	@echo "Makefile: Done running end2end tests"
