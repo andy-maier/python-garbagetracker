@@ -4,10 +4,10 @@ Test the GarbageTracker class.
 
 from __future__ import absolute_import, print_function
 
-import six
-import pytest
 from collections import OrderedDict
 from xml.dom.minidom import Document
+import six
+import pytest
 from yagot import GarbageTracker
 from .test_decorator import SelfRef
 
@@ -263,7 +263,7 @@ def test_GarbageTracker_track(desc, details, leaks_only, enable, ignore):
     use_pdb = details.get('pdb', False)
 
     if use_pdb:
-        import pdb
+        import pdb  # pylint: disable=import-outside-toplevel
         pdb.set_trace()
 
     obj = GarbageTracker()
