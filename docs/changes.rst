@@ -16,6 +16,8 @@ Released: not yet
 
 **Bug fixes:**
 
+* Added support for Python 3.4 in Tox to fix Tox and Appveyor.
+
 **Enhancements:**
 
 **Cleanup:**
