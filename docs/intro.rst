@@ -5,7 +5,7 @@ Introduction
 ============
 
 Yagot (Yet Another Garbage Object Tracker) is a tool for Python developers to
-help you finding issues with garbage collection and memory leaks:
+help find issues with garbage collection and memory leaks:
 
 * It can determine the set of *collected objects* caused by a function or
   method.
@@ -31,7 +31,7 @@ See section
 :ref:`Background`
 for more detailed explanations about object release in Python.
 
-Yagot is simple to use and provides two ways of using it:
+Yagot is simple to use in either of the following ways:
 
 * It provides a `pytest`_ plugin that detects collected and uncollectable
   objects caused by the test cases. This detection is enabled by specifying
@@ -57,8 +57,8 @@ Usage
 -----
 
 Here is an example of how to use Yagot to detect collected objects caused by
-pytest test cases by means of using the command line options provided by the
-pytest plugin of Yagot:
+pytest test cases using the command line options provided by the pytest plugin
+of Yagot:
 
 .. code-block:: text
 
@@ -110,8 +110,7 @@ pytest plugin of Yagot:
     =========================== 1 passed, 1 deselected, 1 error in 0.07s ===========================
 
 Here is an example of how to use Yagot to detect collected objects caused by a
-function by means of using the ``garbage_checked`` decorator of Yagot on the
-function:
+function using the ``garbage_checked`` decorator of Yagot on the function:
 
 .. code-block:: text
 
