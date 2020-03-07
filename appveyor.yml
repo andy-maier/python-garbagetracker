@@ -4,9 +4,9 @@
 environment:
   matrix:
 
-    - TOX_ENV: win64_py27_32
-      UNIX_PATH: none
-      PYTHON_CMD: python
+#    - TOX_ENV: win64_py27_32
+#      UNIX_PATH: none
+#      PYTHON_CMD: python
 
 #    - TOX_ENV: win64_py27_64
 #      UNIX_PATH: none
@@ -16,9 +16,9 @@ environment:
 #      UNIX_PATH: none
 #      PYTHON_CMD: python
 
-#    - TOX_ENV: win64_py34_64
-#      UNIX_PATH: none
-#      PYTHON_CMD: python
+    - TOX_ENV: win64_py34_64
+      UNIX_PATH: none
+      PYTHON_CMD: python
 
 #    - TOX_ENV: win64_py35_32
 #      UNIX_PATH: none
@@ -48,9 +48,9 @@ environment:
 #      UNIX_PATH: none
 #      PYTHON_CMD: python
 
-#    - TOX_ENV: win64_py38_64
-#      UNIX_PATH: none
-#      PYTHON_CMD: python
+    - TOX_ENV: win64_py38_64
+      UNIX_PATH: none
+      PYTHON_CMD: python
 
 ## TODO: Disabled because python2.7 with cygwin 32-bit fails with:
 ##       "virtualenv is not compatible with this system or executable"
@@ -84,15 +84,15 @@ environment:
 #      PIP_CMD: pip
 #      CYGWIN_PYTHON_DEVEL: python38-devel
 
-    - TOX_ENV: cygwin64_py38
-      UNIX_PATH: C:\cygwin64\bin
-      PYTHON_CMD: python3.8
-      PIP_CMD: pip
-      CYGWIN_PYTHON_DEVEL: python38-devel
+#    - TOX_ENV: cygwin64_py38
+#      UNIX_PATH: C:\cygwin64\bin
+#      PYTHON_CMD: python3.8
+#      PIP_CMD: pip
+#      CYGWIN_PYTHON_DEVEL: python38-devel
 
 configuration:
 # These values will become the values of the PACKAGE_LEVEL env.var.
-#  - minimum
+  - minimum
   - latest
 
 install:

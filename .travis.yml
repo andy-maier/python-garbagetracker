@@ -27,17 +27,17 @@ sudo: required
 matrix:
   include:
 
-    - os: linux
-      language: python
-      python: "2.7"
-      env:
-        - PACKAGE_LEVEL=minimum
+#    - os: linux
+#      language: python
+#      python: "2.7"
+#      env:
+#        - PACKAGE_LEVEL=minimum
 
-    - os: linux
-      language: python
-      python: "2.7"
-      env:
-        - PACKAGE_LEVEL=latest
+#    - os: linux
+#      language: python
+#      python: "2.7"
+#      env:
+#        - PACKAGE_LEVEL=latest
 
 #    - os: linux
 #      language: python
