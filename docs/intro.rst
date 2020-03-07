@@ -16,16 +16,20 @@ help find issues with garbage collection and memory leaks:
   into which the object to be released is involved. The garbage collector is
   designed to handle circular references when releasing objects.
 
+  Collected objects are not a problem per se, but they can contribute to
+  large memory use and can often be eliminated.
+
 * It can determine the set of *uncollectable objects* caused by a function or
   method.
 
   Uncollectable objects are objects Python was unable to release during garbage
   collection, even when running a full collection (i.e. on all generations of
-  the Python generational garbage collector). Uncollectable objects remain
-  allocated in the last generation of the garbage collector. On each run on
-  its last generation, the garbage collector attempts to release these objects.
-  It seems to be rare that these continued attempts eventually succeed, so
-  these objects can basically be considered memory leaks.
+  the Python generational garbage collector).
+
+  Uncollectable objects remain allocated in the last generation of the garbage
+  collector. On each run on its last generation, the garbage collector attempts
+  to release these objects. It seems to be rare that these continued attempts
+  eventually succeed, so these objects can basically be considered memory leaks.
 
 See section
 :ref:`Background`
@@ -33,10 +37,11 @@ for more detailed explanations about object release in Python.
 
 Yagot is simple to use in either of the following ways:
 
-* It provides a `pytest`_ plugin that detects collected and uncollectable
-  objects caused by the test cases. This detection is enabled by specifying
-  command line options or environment variables and does not require modifying
-  the test cases.
+* It provides a `pytest`_ plugin named :ref:`yagot <Yagot pytest plugin>` that
+  detects collected and
+  uncollectable objects caused by the test cases. This detection is enabled by
+  specifying command line options or environment variables and does not require
+  modifying the test cases.
 
 * It provides a Python decorator named
   :func:`~yagot.garbage_checked`
@@ -57,8 +62,8 @@ Usage
 -----
 
 Here is an example of how to use Yagot to detect collected objects caused by
-pytest test cases using the command line options provided by the pytest plugin
-of Yagot:
+pytest test cases using the command line options provided by the
+:ref:`yagot pytest plugin`:
 
 .. code-block:: text
 
@@ -110,7 +115,11 @@ of Yagot:
     =========================== 1 passed, 1 deselected, 1 error in 0.07s ===========================
 
 Here is an example of how to use Yagot to detect collected objects caused by a
-function using the ``garbage_checked`` decorator of Yagot on the function:
+function using the
+:func:`~yagot.garbage_checked`
+decorator on the function.
+The yagot pytest plugin is loaded in this example and it presence is reported
+by pytest, but it is not used:
 
 .. code-block:: text
 
@@ -294,6 +303,17 @@ it to):
 
     $ python -c "import yagot; print('ok')"
     ok
+
+In addition, you can verify that pytest picks up the yagot plugin, by
+looking at the pytest help. If it shows the yagot options, the plugin
+has been properly picked up:
+
+.. code-block:: bash
+
+    $ pytest --help | grep yagot
+    --yagot               Enables checking for collected and uncollectable
+    --yagot-leaks-only    Limits the checking to only uncollectable (=leak)
+    --yagot-ignore-types=TYPE[,TYPE[...]]
 
 In case of trouble with the installation, see the :ref:`Troubleshooting`
 section.
