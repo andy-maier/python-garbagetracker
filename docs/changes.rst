@@ -18,6 +18,9 @@ Released: not yet
 
 * Added support for Python 3.4 in Tox to fix Tox and Appveyor.
 
+* Removed support for Pypy in Travis, because required GC functionality
+  is not supported in Pypy.
+
 **Enhancements:**
 
 **Cleanup:**
